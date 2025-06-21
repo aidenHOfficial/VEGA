@@ -1,0 +1,21 @@
+Needs:
+   Easy: 
+      to generate a visual timeslot interface
+      to generate a  schedule in a text file or print out
+      to save preferences, and states.
+      to prioritize responsibilities, goals, todos, and then wants / ideas to fill in time
+   Medium:
+      to be able to schedule things at any point of the year in advance
+      to have some sort of ranking or urgency to each task that increases as its deadline approaches.
+      to understand my preferences, and hobbies
+      to have a list of things, places, food items, clothes, or stores to generate schedule plans
+   Hard:
+      to update my google callendar with the schedule
+      to make reservations for me
+      to think of things to fill in empty time slots
+      to consider things like travel times to places
+      to be able to reccommend things based on whether I liked an activity or not
+      to be able to generate subgoals that act as small achievements to track progress.
+
+5 sections:   
+	Responsibilities	Todos	Wants	Ideas	Goals

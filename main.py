@@ -2,6 +2,8 @@ import curses
 import datetime
 import math
 from enum import Enum
+from typing import Optional
+
 
 ascii_title = """
  _    _________________ 
@@ -23,6 +25,7 @@ PW = 1 # Personal weight
 RW = 1 # Relational weight
 
 class Task:
+
     def __init__(self, title: str, description: str):
         self.title = title
         self.description = description
@@ -31,16 +34,32 @@ class Task:
     def __str__(self):
         print(f"Title: {self.title} Description: {self.description} Completed: {self.completed}")
 
+    def get_completion_status(self):
+        return self.completed()
+    
+    def get_title(self):
+        return self.title
+    
+    def get_description(self):
+        return self.description
+
 class TemporalTask:
-    def __init__(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime, repeated_time_difference: datetime.timedelta):
+
+    def __init__(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime):
         super().__init__(title, description)
 
         self.start_date = start_date
         self.end_date = end_date
-        self.repeated_time_difference = repeated_time_difference
+        # self.repeated_time_difference = repeated_time_difference
 
     def __str__(self):
         return f"Title: {self.title} Description: {self.description} Complete Date: {self.complete_date}, Completed: {self.completed}"
+
+    def get_start_date(self):
+        return self.start_date
+    
+    def get_end_date(self):
+        return self.end_date
 
     def get_total_time(self):
         if (self.start_date is not None and self.end_date is not None):
@@ -53,66 +72,71 @@ class TemporalTask:
         return None
     
     def get_next_time_slot(self, multiple: int):
-        if (multiple < 1):
-            raise ValueError("Multiple not greater than 1")
-        if (self.start_date is not None and self.end_date is not None):
-            return (self.start_date + self.repeated_time_difference * multiple), (self.end_date + self.repeated_time_difference)
+        # if (multiple < 1):
+        #     raise ValueError("Multiple not greater than 1")
+        # if (self.start_date is not None and self.end_date is not None):
+        #     return (self.start_date + self.repeated_time_difference * multiple), (self.end_date + self.repeated_time_difference)
         return None
 
-class Goal(Task):    
+class Goal(TemporalTask):
 
-    def __init__(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime, repeated_time_difference: datetime.timedelta):
-        super().__init__(title, description)
-
-        self.start_date = start_date
-        self.end_date = end_date
+    def __init__(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime):
+        super().__init__(title, description, start_date, end_date)
         self.subgoals = []
         self.completed_steps = 0
-    
+
     def __str__(self):
-        return f"Title: {self.title} Description: {self.description} Start Date: {self.start_date} Complete Date: {self.complete_date} Completed: {self.completed} Subgoals: {self.subgoals} "
-    
+        self.print_tree(self)
+
+    def print_tree(self, node, prefix="", is_last=True):
+        connector = "└── " if is_last else "├── ",
+        print(prefix + connector + str(node.title))
+
+        new_prefix = prefix + ("    " if is_last else "│   ")
+
+        child_count = len(node.subgoals)
+        for i, child in enumerate(node.subgoals):
+            is_last_child = (i == child_count - 1)
+            self.print_tree(child, new_prefix, is_last_child)
+
     def check_index(self, index):
         if index is None or index < 0 or index >= len(self.subgoals):
             raise IndexError("Invalid subgoal index")
         
-    def check_completion(self):
-        completed_steps = 0
-
+    def get_completion_status(self):
+        completed = 0
         for subgoal in self.subgoals:
-            if (subgoal.completed == True):
-                completed_steps += 1
-
-        self.completed_steps = completed_steps
+            completed += subgoal.get_completion_status()
+        return completed
+        
+    def check_completion(self):
+        self.completed_steps = self.get_completion_status()
 
         if (self.completed_steps == len(self.subgoals) - 1):
             self.completed = True
         else:
             self.completed = False
         
-        return completed_steps
+        return self.completed_steps
 
     def get_num_subgoals(self):
         return len(self.subgoals)
-    
+
     def get_subgoal(self, index: int):
         self.check_index(index)
 
         return self.subgoals[index]
-    
+
     def get_next_subgoal(self):
         for subgoal in self.subgoals:
             if (subgoal.complete == False):
                 return subgoal
         return None
 
-    def get_subgoal_list(self):
-        return self.subgoals
-
-    def add_subgoal(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime):
-        self.subgoals.append(TemporalTask(title, description, start_date, end_date, None))
+    def add_subgoal(self, goal: Task):
+        self.subgoals.append(goal)
         
-        self.subgoals.sort(key=lambda x: x.start_date)
+        self.subgoals.sort(key=lambda x: getattr(x, 'start_date', datetime.datetime.min))
 
         self.check_completion()
 
@@ -139,42 +163,84 @@ class Goal(Task):
         self.check_completion()
 
         if not self.subgoals:
-            return 100.0  # Avoid division by zero; if no subgoals, consider complete
+            return 100.0
         return (self.completed_steps / len(self.subgoals)) * 100
-    
-class Routine(Task):
 
-    def __init__(self, title, description, start_time, time_between: datetime.timedelta):
-        super().__init__(title, description)
+class Routine(TemporalTask):
 
-        self.start_time = start_time
+    def __init__(self, title: str, description: str, start_date: datetime.datetime, end_date: datetime.datetime , time_between: datetime.timedelta):
+        super().__init__(title, description, start_date, end_date)
+
         self.time_between = time_between
-        self.total_estimated_time = datetime.timedelta(0, 0, 0, 0, 0, 0, 0)
+        self.time_duration_map = {}
 
-        self.items = []
+        self.tasks = []
+
+    @property
+    def total_estimated_time(self):
+        total = datetime.timedelta()
+        for task in self.tasks:
+            if isinstance(task, TemporalTask):
+                total += task.get_total_time()
+            else:
+                total += self.time_duration_map[task]
+        return total
 
     def check_index(self, index):
         if index is None or index < 0 or index >= len(self.subgoals):
             raise IndexError("Invalid subgoal index")
 
-    def get_routine_tasks(self):
-        return self.items
+    def check_complete_time(self, timedelta: datetime.timedelta):
+        return timedelta > datetime.timedelta(0, 5, 0, 0, 0, 0, 0)
+
+    def get_tasks(self):
+        return self.tasks
     
-    def get_routine_task(self, index):
+    def get_task(self, index: int):
         self.check_index(index)
 
-        return self.items[index]
+        return self.tasks[index]
     
-    def get_time_slot(self):
-        return self.start_time, self.total_estimated_time + self.start_time
-    
-    def get_total_time(self):
+    def get_estimated_time(self):
         return self.total_estimated_time
 
-    def add_routine_task(self, task, complete_time: datetime.timedelta):
-        if (task not in self.items):
-            self.items.add(task)
-            self.total_estimated_time += complete_time
+    def add_task(self, task: Task, complete_time: Optional[datetime.timedelta] = None):
+        if complete_time is None:
+            if isinstance(task, TemporalTask):
+                complete_time = task.get_total_time()
+            else:
+                raise ValueError("complete_time must be provided for non-temporal Tasks.")
+
+        if self.check_complete_time(complete_time):
+            self.tasks.append(task)
+            self.tasks.sort(key=lambda x: getattr(x, 'start_date', datetime.datetime.min))
+
+            if isinstance(task, Task):
+                self.time_duration_map[task] = complete_time
+
+    def remove_task(self, index: int):
+        self.check_index(index)
+
+        if (self.tasks[index] in self.time_duration_map):
+            self.time_duration_map.pop(self.tasks[index])
+
+        self.tasks.pop(index)
+
+    def change_order(self, reordered_tasks: list):
+        if set(self.tasks) != set(reordered_tasks):
+            raise Exception("Reordered tasks must contain exactly the same tasks as before reorder!")
+        self.tasks = reordered_tasks
+
+    def change_task_complete_time(self, index: int, complete_time: datetime.timedelta):
+        self.check_index(index)
+        task = self.tasks[index]
+
+        if isinstance(task, TemporalTask):
+            raise ValueError("Cannot set complete_time directly for TemporalTask. Change its start/end times instead.")
+
+        if self.check_complete_time(complete_time):
+            self.time_duration_map[task] = complete_time
+
 
 
 def output_to_file(string):
@@ -183,11 +249,12 @@ def output_to_file(string):
 
 
 def get_urgency_score(event):
-    # Returns a score between 0 and 10
+    # Returns a score between 0 and 100
 
     time_diffrerence = None
-    shift = 0.202732554054
-    m = 5
+    shift = 1.09861228867
+    d = 23.44065
+    m = 50
 
     if ("deadline" in event):
         time_diffrerence = (event["deadline"] - datetime.now()).hours()
@@ -195,10 +262,12 @@ def get_urgency_score(event):
     else:
         time_diffrerence = (event["time"] - datetime.now()).hours()
 
-    # m * tanh(t+s) + m
-    return m * ((math.e**(time_diffrerence + shift) - math.e**(-(time_diffrerence + shift))) / (math.e**(time_diffrerence + shift) + math.e**(-(time_diffrerence + shift)))) + m
+    # m * tanh((t/d)+s) + m
+    return m * ((math.e**((time_diffrerence / d) + shift) - math.e**(-((time_diffrerence / d) + shift))) / (math.e**((time_diffrerence / d) + shift) + math.e**(-((time_diffrerence / d) + shift)))) + m
 
 def get_priority_score(event):
+    # Returns a score between 0 and 100
+
     return max((GW * event["goal_value"]) + (RW * event["routine_value"]) + (PW * event["personal_value"]) + (RW * event["relational_value"]), 10)
 
 def schedule_new_event(task: Task, goal_importance: float, routine_importance: float, personal_importance: float):
@@ -324,7 +393,7 @@ def print_schedule_window(stdscr, x_padding, y_padding, day_events):
     # example day_events data structure where: 
     #   date is the selected view date,
     #   events is the list of events in chronological order
-    day_events = 
+    day_events = None
 
     title_win = schedule_pad.derwin(2, hours_win_width, 1, 1)
     hours_win = schedule_pad.derwin(height-4, hours_win_width, 3, 1)

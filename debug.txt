@@ -78429,3 +78429,4 @@ menu_width: 130, menu_height: 20
 main_width: 134, main_height: 23
 main_dim - menu_dim: width: 4, height: 3
 key: 10
+starting width: 134, height: 9

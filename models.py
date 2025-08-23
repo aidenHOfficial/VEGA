@@ -14,12 +14,6 @@ RW = 1 # Routine weight
 PW = 1 # Personal weight
 REW = 1 # Relational weight
 
-def validate_datetime_tuple(period, label="reschedule_period"):
-    if not isinstance(period, tuple) or len(period) != 2:
-        raise ValueError(f"{label} must be a tuple of two datetime objects.")
-    if not isinstance(period[0], datetime) or not isinstance(period[1], datetime):
-        raise ValueError(f"{label} must contain datetime objects.")
-
 @dataclass
 class TimeInterval:
     start_date: datetime
@@ -37,7 +31,12 @@ class TimeInterval:
         
     def __eq__(self, other: TimeInterval):
         return self.start_date == other.start_date and self.end_date == other.end_date
-        
+    
+    def __lt__(self, other):
+        if not isinstance(other, TimeInterval):
+            return NotImplemented
+        return (self.start_date, self.end_date) < (other.start_date, other.end_date)
+
     def __str__(self):
         return f"({self.start_date}, {self.end_date})"
       
@@ -96,9 +95,9 @@ class TemporalTask(Task):
     _completed = False
     _deadline: Optional[datetime] = None
     _startline: Optional[datetime] = None
-    _reschedule_periods: Optional[List[TimeInterval]] = field(default_factory=list)
+    _schedule_intervals: Optional[List[TimeInterval]] = None
 
-    def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, reschedule_periods: Optional[List[TimeInterval]] = None):
+    def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, schedule_intervals: Optional[List[TimeInterval]] = None):
         super().__init__(title, description, deadline)
 
         self._start_date = start_date
@@ -106,7 +105,11 @@ class TemporalTask(Task):
 
         self._startline = startline
 
-        self._reschedule_periods = reschedule_periods if reschedule_periods is not None else []
+        schedule_intervals = schedule_intervals or []
+
+        schedule_intervals.append(TimeInterval(start_date, end_date))
+
+        self._schedule_intervals = schedule_intervals.copy()
 
         self.__post_init__()
 
@@ -121,9 +124,8 @@ class TemporalTask(Task):
             raise ValueError("start_date → end_date must be at least 5 seconds apart.")
         if self._startline and self._deadline and (self._deadline - self._startline) < timedelta(seconds=5):
             raise ValueError("startline → deadline must be at least 5 seconds apart.")
-        for period in self._reschedule_periods:
-            validate_datetime_tuple(period)
-            if (self._startline and period[0] < self._startline) or (self._deadline and period[1] > self._deadline):
+        for interval in self._schedule_intervals:
+            if (self._startline and interval.start_date < self._startline) or (self._deadline and interval.end_date > self._deadline):
                 raise ValueError("All reschedule periods must be within startline and deadline.")
 
     def __eq__(self, other):
@@ -153,15 +155,15 @@ class TemporalTask(Task):
         return self._end_date - self._start_date
     
     def get_time_slot(self):
-        return (self._start_date, self._end_date)
+        return TimeInterval(self._start_date, self._end_date)
 
-    def get_reschedule_periods(self):
-        return self._reschedule_periods.copy()
+    def get_schedule_intervals(self):
+        return self._schedule_intervals.copy()
 
-    def add_reschedule_period(self, period: TimeInterval):
-        if (self._startline and period.start_date < self._startline or self._deadline and period.end_date > self._deadline):
+    def add_schedule_interval(self, interval: TimeInterval):
+        if (self._startline and interval.start_date < self._startline or self._deadline and interval.end_date > self._deadline):
             raise ValueError("Added period must be within the period of startline, and deadline")
-        self._reschedule_periods.append(period)
+        self._schedule_intervals.append(interval)
 
 @dataclass
 class Goal(TemporalTask):
@@ -514,23 +516,25 @@ class Event:
 @dataclass
 class Node:
     events: List[Event]
+    key: TimeInterval
     max: datetime
+    min: datetime
     left: Node
     right: Node
     height: int
     
-    def __init__(self, event: Event):
+    def __init__(self, event: Event, key: TimeInterval):
         self.events = [event]
-        self.max = event.end_date()
+        self.max = key.end_date
+        self.min = key.start_date
         self.left = None
         self.right = None
-        height = 1
-        
-    @property
-    def event(self):
-        return self.events[0]
+        self.height = 1
+        self.key = key
     
     def add_event(self, event: Event):
+        if (event.get_time_slot() != self.key):
+            raise ValueError("Event time slot does not match node time slot!")
         self.events.append(event)
         
     def get_num_events(self):
@@ -541,28 +545,44 @@ class Node:
             if (key < 0 or key > len(self.events)):
                 raise IndexError("Invalid event index!")
             del self.events[key]
+            return
+        if (isinstance(key, str)):
+            for index, event in enumerate(self.events):
+                if (event._task._title == key):
+                    del self.events[index]
+                    return
+            raise ValueError("Event with given title not found!")
         elif (isinstance(key, Event)):
             self.events.remove(key)
-        raise ValueError("key must be int or Event!")
+            return
+        raise TypeError("key must be string int or Event!")
         
     def get_event(self, key):
         if (isinstance(key, int)):
             if (key < 0 or key > len(self.events)):
                 raise IndexError("Invalid event index!")
             return self.events[key]
-        elif (isinstance(key, Event)):
-            self.events.remove(key)
-        raise ValueError("key must be int or Event!")
+        if (isinstance(key, str)):
+            for event in self.events:
+                if (event._task._title == key):
+                    return event
+            raise ValueError("Event with given title not found!")
+        raise TypeError("key must be int or string!")
         
     def get_events(self):
         return self.events
+    
+    def get_key(self):
+        return self.key
 
 @dataclass
-class TimeTree:
+class TimeTree:  
     _root: Node
+    _size: int
     
     def __init__(self):
         self._root = None
+        self._size = 0
         
     def _height(self, node: Node):
         if (not node):
@@ -592,6 +612,17 @@ class TimeTree:
         node.height = 1 + max(self._height(node.left), self._height(node.right))
         child_node.height = 1 + max(self._height(child_node.left), self._height(child_node.right))
 
+        node.max = max(
+            node.key.end_date,
+            node.left.max if node.left else datetime.min,
+            node.right.max if node.right else datetime.min
+        )
+        child_node.max = max(
+            child_node.key.end_date,
+            child_node.left.max if child_node.left else datetime.min,
+            child_node.right.max if child_node.right else datetime.min
+        )
+
         return child_node
     
     def _right_rotate(self, node: Node):
@@ -604,63 +635,67 @@ class TimeTree:
         node.height = 1 + max(self._height(node.left), self._height(node.right))
         child_node.height = 1 + max(self._height(child_node.left), self._height(child_node.right))
 
+        node.max = max(
+            node.key.end_date,
+            node.left.max if node.left else datetime.min,
+            node.right.max if node.right else datetime.min
+        )
+        child_node.max = max(
+            child_node.key.end_date,
+            child_node.left.max if child_node.left else datetime.min,
+            child_node.right.max if child_node.right else datetime.min
+        )
+
         return child_node
     
-    def newNode(event: Event):
-        return Node(event)
-    
-    def insert(self, event: Event):
-        return self._insert_recursive(self._root, event)
-    
-    def _insert_recursive(self, node: Node, event: Event):
+    def _insert_recursive(self, node: Node, event: Event, key: TimeInterval):
         if node is None:
-            new_node = self.newNode(event)
+            new_node = self._new_node(event, key)
             if (self._root is None):
                 self._root = new_node
+            self._size += 1
             return new_node
         
-        if (event.start_date < node.event.start_date):
-            node.left = self.insert(node.left, event)
-        elif (event.start_date > node.event.start_date):
-            node.right = self.insert(node.right, event)
+        if (key < node.key):
+            node.left = self._insert_recursive(node.left, event, key)
+        elif (key > node.key):
+            node.right = self._insert_recursive(node.right, event, key)
         else:
             node.add_event(event)
             return node
         
         node.height = 1 + max(self._height(node.left), self._height(node.right))
 
+        left_max = node.left.max if node.left else datetime.min
+        right_max = node.right.max if node.right else datetime.min
+        node.max = max(node.key.end_date, left_max, right_max)
+
         balance = self._get_balance(node)
 
-        if balance > 1 and event.start_date < node.left.event.start_date:
+        if balance > 1 and key < node.left.key:
             return self._right_rotate(node)
 
-        if balance < -1 and event.start_date > node.right.event.start_date:
+        if balance < -1 and key > node.right.key:
             return self._left_rotate(node)
 
-        if balance > 1 and event.start_date > node.left.event.start_date:
+        if balance > 1 and key > node.left.key:
             node.left = self._left_rotate(node.left)
             return self._right_rotate(node)
 
-        if balance < -1 and event.start_date < node.right.event.start_date:
+        if balance < -1 and key < node.right.key:
             node.right = self._right_rotate(node.right)
             return self._left_rotate(node)
-        
-        if (node.max < event.end_date):
-            node.max = event.end_date
 
         return node
-    
-    def delete_node(self, event: Event):
-        return self._delete_node_recursive(self._root, event)
-    
-    def _delete_node_recursive(self, node: Node, event: Event):
+
+    def _delete_node_recursive(self, node: Node, event: Event, key: TimeInterval):
         if node is None:
             return node
         
-        if (event.start_date < node.event.start_date):
-            node.left = self._delete_node_recursive(node.left, event)
-        elif (event.start_date > node.event.start_date):
-            node.right = self._delete_node_recursive(node.right, event)
+        if (key < node.key):
+            node.left = self._delete_node_recursive(node.left, event, key)
+        elif (key > node.key):
+            node.right = self._delete_node_recursive(node.right, event, key)
         else:
             node.remove_event(event)
             
@@ -676,13 +711,20 @@ class TimeTree:
 
                 else:
                     temp = self._min_value_node(node.right)
+                    node.key = temp.key
                     node.events = temp.events
-                    node.right = self._delete_node_recursive(node.right, temp.key)
+                    node.right = self._delete_node_recursive(node.right, event, temp.key)
+                
+                self._size -= 1
 
         if node is None:
             return node
         
         node.height = 1 + max(self._height(node.left), self._height(node.right))
+
+        left_max = node.left.max if node.left else datetime.min
+        right_max = node.right.max if node.right else datetime.min
+        node.max = max(node.key.end_date, left_max, right_max)
 
         balance = self._get_balance(node)
         
@@ -701,49 +743,92 @@ class TimeTree:
             return self._left_rotate(node)
 
         return node
+
+    def _new_node(self, event: Event, key: TimeInterval):
+        return Node(event, key)
     
-    def _is_overlapping(event: Event, interval: TimeInterval):
-        return event.start_date <= interval.start_date and interval.start_date <= event.end_date
-    
-    def overlap_search(self, interval: TimeInterval):
-        if self._root is None:
-            return None
-        return self._overlap_search_recursive(self._root, interval, [])
-        
+    def _is_overlapping(self, interval1: TimeInterval, interval2: TimeInterval):
+        return interval1.start_date <= interval2.end_date and interval2.start_date <= interval1.end_date
+
     def _overlap_search_recursive(self, node: Node, interval: TimeInterval, overlaps: List):
-        if self._is_overlapping(node.event, interval):
-            overlaps.append(node.event)
+        if self._is_overlapping(node.key, interval):
+            overlaps.extend(node.get_events())
             
         if node.left is not None and node.left.max >= interval.start_date:
-            return self.overlap_search(node.left, interval)
+            self._overlap_search_recursive(node.left, interval, overlaps)
         if node.right is not None and node.right.min <= interval.end_date:
-            return self.overlap_search(node.right, interval)
-        
-    def inorder(self):
-        return self._inorder_recursive(self._root)
-        
+            self._overlap_search_recursive(node.right, interval, overlaps)
+
     def _inorder_recursive(self, node: Node):
         if node is None:
             return
         
-        self.inorder(node.left)
-        print("[" + str(node.event.start_date) + ", " + str(node.event.end_date) + "]" + " max = " + str(node.max))
-        self.inorder(node.right)
+        self._inorder_recursive(node.left)
+        print("[" + str(node.key.start_date) + ", " + str(node.key.end_date) + "]" + " max = " + str(node.max))
+        self._inorder_recursive(node.right)
+
+    def _print_tree_recursive(self, node: Node, prefix: str, is_left: bool):
+        if node is not None:
+            print(prefix + ("├── " if is_left else "└── ") + str(node.key) + f" ({node.get_num_events()} events) " + ("Left Node" if is_left else "Right Node"))
+            self._print_tree_recursive(node.left, prefix + ("│   " if is_left else "    "), True)
+            self._print_tree_recursive(node.right, prefix + ("│   " if is_left else "    "), False)
+
+    def get_size(self):
+        return self._size
+
+    def insert(self, event: Event):
+        if (not isinstance(event.get_task(), TemporalTask)):
+            raise ValueError("Event task must be a TemporalTask to be inserted into TimeTree")
+        for time_interval in event.get_task().get_schedule_intervals():
+            self._root = self._insert_recursive(self._root, event, time_interval)
+
+    def delete(self, event: Event):
+        if (not isinstance(event.get_task(), TemporalTask)):
+            raise ValueError("The only events in the tree are those with TemporalTask tasks")
+        for time_interval in event.get_task().get_schedule_intervals():
+            self._root = self._delete_node_recursive(self._root, event, time_interval)
+
+    def search(self, key: TimeInterval):
+        current = self._root
+        while current is not None:
+            if key == current.key:
+                return current
+            elif key < current.key:
+                current = current.left
+            else:
+                current = current.right
+        raise ValueError("Key not found in tree")
+
+    def overlap_search(self, interval: TimeInterval):
+        if self._root is None:
+            return None
+        overlaps = []
+        self._overlap_search_recursive(self._root, interval, overlaps)
+
+        return overlaps
+    
+    def inorder(self):
+        return self._inorder_recursive(self._root)
+
+    def print_tree(self):
+        self._print_tree_recursive(self._root, "", True)
 
 @dataclass
 class Calendar:
-    # Events need to be a self balancing interval tree
-    _events: Dict[date, List[Event]]
+    _events: TimeTree
     _todos: List
     _dated_todos: List
 
     def __init__(self):
-        self._events = defaultdict(list)
+        self._events = TimeTree()
         self._dated_todos = []
         self._todos = []
 
     def _sort_day_by_priority(self, day: date):
-        self._events[day].sort(key=lambda event: event.get_priority_score(), reverse=True)
+        events = self._events.search(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+        if events:
+            events.sort(key=lambda event: event.get_priority_score(), reverse=True)
+        return events
 
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
@@ -754,15 +839,10 @@ class Calendar:
             else:
                 self._todos.append(task)
         elif isinstance(task, TemporalTask):
-            event_day = task.start_date.date()
-            self._events[event_day] = new_event
+            self._events.insert(new_event)
     
-    def get_events(self, start_date: datetime, end_date: datetime):
-        events = []
-        for day in self._events.keys():
-            if (start_date < day and day < end_date):
-                events.extend(self._events[day])
-        return events
+    def get_events(self, TimeInterval: TimeInterval):
+        return self._events.overlap_search(TimeInterval)
 
     def generate_schedule(self, date: datetime):
         # CSP trying to fit everything into this. 
@@ -785,7 +865,6 @@ class Calendar:
         
 
         return
-    
 
 class VEGA:
     def __init__(self):

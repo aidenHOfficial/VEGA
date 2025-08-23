@@ -97,22 +97,17 @@ class TemporalTaskTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             TemporalTask("test", "this is a test task", datetime(2025, 9, 2), datetime(2025, 10, 2), deadline=datetime(2025, 10, 1))
-        
-    def test_constructor_with_invalid_reschedules(self):
-        reschedules = [(1, 2), (3, 4)]
-        with self.assertRaises(ValueError):
-            TemporalTask("test", "this is a test task", datetime(2025, 10, 1), datetime(2025, 10, 31), reschedule_periods=reschedules)
     
-        reschedules = [(datetime(2025, 10, 1), datetime(2025, 10, 2)), (datetime(2025, 10, 3), datetime(2025, 10, 4))]
+        reschedules = [TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 4))]
         with self.assertRaises(ValueError):
-            TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), deadline=datetime(2025, 10, 9), reschedule_periods=reschedules)
+            TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), deadline=datetime(2025, 10, 9), schedule_intervals=reschedules)
         
         with self.assertRaises(ValueError):
-            TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), startline=datetime(2025, 10, 2), reschedule_periods=reschedules)
+            TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), startline=datetime(2025, 10, 2), schedule_intervals=reschedules)
 
     def test__str__(self):
-        task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), reschedule_periods=[(datetime(2025, 10, 3), datetime(2025, 10, 11))])
-        self.assertEqual(task.__str__(), "TemporalTask(_title='test', _description='this is a test task', _completed=False, _deadline=None, _start_date=datetime.datetime(2025, 10, 2, 0, 0), _end_date=datetime.datetime(2025, 10, 10, 0, 0), _startline=None, _reschedule_periods=[(datetime.datetime(2025, 10, 3, 0, 0), datetime.datetime(2025, 10, 11, 0, 0))])")
+        task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), schedule_intervals=[TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
+        self.assertEqual(task.__str__(), "TemporalTask(_title='test', _description='this is a test task', _completed=False, _deadline=None, _start_date=datetime.datetime(2025, 10, 2, 0, 0), _end_date=datetime.datetime(2025, 10, 10, 0, 0), _startline=None, _schedule_intervals=[TimeInterval(start_date=datetime.datetime(2025, 10, 3, 0, 0), end_date=datetime.datetime(2025, 10, 11, 0, 0)), TimeInterval(start_date=datetime.datetime(2025, 10, 2, 0, 0), end_date=datetime.datetime(2025, 10, 10, 0, 0))])")
 
     def test_get_start_date(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
@@ -132,31 +127,31 @@ class TemporalTaskTests(unittest.TestCase):
 
     def test_get_time_slot(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
-        self.assertEqual(task.get_time_slot(), (datetime(2025, 10, 2), datetime(2025, 10, 10)))
+        self.assertEqual(task.get_time_slot(), TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)))
 
-    def test_get_reschedule_period_no_values(self):
+    def test_get_schedule_interval_no_values(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
-        self.assertEqual(task.get_reschedule_periods(), [])
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
 
-    def test_get_reschedule_period_with_values(self):
-        task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), reschedule_periods=[(datetime(2025, 10, 3), datetime(2025, 10, 11))])
-        self.assertEqual(task.get_reschedule_periods(), [(datetime(2025, 10, 3), datetime(2025, 10, 11))])
+    def test_get_schedule_interval_with_values(self):
+        task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), schedule_intervals=[TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11)), TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
 
-    def test_add_reschedule_period(self):
+    def test_add_schedule_interval(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
-        task.add_reschedule_period(TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11)))
-        self.assertEqual(task.get_reschedule_periods(), [TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
+        task.add_schedule_interval(TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11)))
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)), TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
         
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
-        task.add_reschedule_period(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)))
-        self.assertEqual(task.get_reschedule_periods(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
+        task.add_schedule_interval(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)))
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)), TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
         
-    def test_add_reschedule_period_invalid_values(self):
+    def test_add_schedule_interval_invalid_values(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
         with self.assertRaises(ValueError):
-            self.assertRaises(ValueError, task.add_reschedule_period(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 10))))
+            self.assertRaises(ValueError, task.add_schedule_interval(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 10))))
         with self.assertRaises(ValueError):
-            self.assertRaises(ValueError, task.add_reschedule_period(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 12))))
+            self.assertRaises(ValueError, task.add_schedule_interval(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 12))))
 
 class GoalTests(unittest.TestCase):
     def get_dummy_goal(self):
@@ -184,8 +179,8 @@ class GoalTests(unittest.TestCase):
         
         return goal
     
-    def test_print_goal(self):
-        print(self.get_dummy_goal())
+    # def test_print_goal(self):
+    #     print(self.get_dummy_goal())
     
     def test_add_subgoal(self):
         goal = self.get_dummy_goal()
@@ -777,7 +772,7 @@ class EventTests(unittest.TestCase):
                 
         temp_task_event = Event(temp_task, 20, 15, 10, 25)
         
-        self.assertEqual(temp_task_event.get_time_slot(), (datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        self.assertEqual(temp_task_event.get_time_slot(), TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
     def test_get_time_slot_invalid(self):
         task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
@@ -788,35 +783,307 @@ class EventTests(unittest.TestCase):
             task_event.get_time_slot()
 
 class NodeTests(unittest.TestCase):
-    def test(self):
-        return
+    def test_add_event(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
 
-# class TimeTreeTests(unittest.TestCase):
-#     def test(self):
-#         tree = TimeTree()
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
         
-#         intervals = [
-#             TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2)),
-#             TimeInterval(datetime(2004, 8, 1), datetime(2004, 12, 31)), 
-#             TimeInterval(datetime(2003, 10, 1), datetime(2004, 10, 1)), 
-#             TimeInterval(datetime(2004, 7, 4), datetime(2004, 7, 12)),]
-            
-#         n = len(intervals)
-#         for i in range(n):
-#             tree.insert(intervals[i])
-            
-#         print("Inorder traversal of constructed Interval Tree is")
-#         tree.inorder()
+        node.add_event(task_event2)
+        node.add_event(task_event3)
         
-#         x = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
-#         print("\nSearching for interval [" + str(x.low) + "," + str(x.high) + "]", end="")
-        
-#         res = overlapSearch(root, x)
-#         if res is None:
-#             print("\nNo Overlapping Interval")
-#         else:
-#             print("\nOverlaps with [" + str(res.low) + ", " + str(res.high) + "]")
+        self.assertIn(task_event2, node.events)
+        self.assertIn(task_event3, node.events)
     
+    def test_remove_event(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        
+        node.add_event(task_event2)
+        node.add_event(task_event3)
+        
+        node.remove_event(0)
+        
+        self.assertIn(task_event2, node.events)
+        self.assertIn(task_event3, node.events)
+
+        node.remove_event("Make bed")
+        
+        self.assertNotIn(task_event2, node.events)
+        self.assertIn(task_event3, node.events)
+        
+        node.remove_event(task_event3)
+        
+        self.assertNotIn(task_event2, node.events)
+        self.assertNotIn(task_event3, node.events)
+
+    def test_remove_event_invalid(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        with self.assertRaises(IndexError):
+            node.remove_event(-1)
+        with self.assertRaises(ValueError):
+            node.remove_event("Anything")
+        with self.assertRaises(TypeError):
+            node.remove_event(datetime(2004, 10, 1))
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        
+        node.add_event(task_event2)
+        node.add_event(task_event3)
+        node.remove_event(task_event)
+        
+        with self.assertRaises(IndexError):
+            node.remove_event(-1)
+        with self.assertRaises(IndexError):
+            node.remove_event(1000)
+        with self.assertRaises(ValueError):
+            node.remove_event("Anything")
+        with self.assertRaises(TypeError):
+            node.remove_event(datetime(2004, 10, 1))
+        with self.assertRaises(ValueError):
+            node.remove_event(Event(temp_task, 20, 15, 10, 25))
+
+    def test_get_num_events(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        self.assertEqual(1, node.get_num_events())
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        
+        node.add_event(task_event2)
+        node.add_event(task_event3)
+        
+        self.assertEqual(3, node.get_num_events())
+
+    def test_get_event(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        self.assertEqual(task_event, node.get_event(0))
+        self.assertEqual(task_event, node.get_event("Test"))
+
+    def test_get_event_invalid(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        with self.assertRaises(IndexError):
+            node.get_event(-1)
+        with self.assertRaises(ValueError):
+            node.get_event("Anything")
+        with self.assertRaises(TypeError):
+            node.get_event(datetime(2004, 10, 1))
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        
+        node.add_event(task_event2)
+        node.add_event(task_event3)
+        node.remove_event(task_event)
+        
+        with self.assertRaises(IndexError):
+            node.get_event(-1)
+        with self.assertRaises(IndexError):
+            node.get_event(1000)
+        with self.assertRaises(ValueError):
+            node.get_event("Anything")
+        with self.assertRaises(TypeError):
+            node.get_event(datetime(2004, 10, 1))
+
+    def test_get_events(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        self.assertEqual([task_event], node.get_events())
+        
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+
+        task_event2 = Event(temp_task2, 10, 20, 10, 0)
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        
+        node.add_event(task_event2)
+        node.add_event(task_event3)
+        
+        events = node.get_events()
+        
+        self.assertIn(task_event, events)
+        self.assertIn(task_event2, events)
+        self.assertIn(task_event3, events)
+
+    def test_get_key(self):
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        
+        self.assertEqual(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), node.get_key())
+
+class TimeTreeTests(unittest.TestCase):
+    def test_insertion(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        self.assertEqual(task_event, tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Test"))
+
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+        task_event2 = Event(temp_task2, 10, 20, 10, 25)
+        tree.insert(task_event2)
+
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        tree.insert(task_event3)
+
+        self.assertEqual(task_event3, tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Reminder"))
+        self.assertEqual(2,  tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_num_events())
+
+        temp_task4 = TemporalTask("Another", "Example text", datetime(2025, 10, 5), datetime(2025, 10, 6))
+        task_event4 = Event(temp_task4, 20, 15, 10, 25)
+        tree.insert(task_event4)
+
+        self.assertEqual(task_event4, tree.search(TimeInterval(datetime(2025, 10, 5), datetime(2025, 10, 6))).get_event("Another"))
+
+    def test_insertion_multiple_schedule_intervals(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2), None, None, [TimeInterval(datetime(2025, 11, 1), datetime(2025, 11, 2)), TimeInterval(datetime(2025, 10, 5), datetime(2025, 10, 6))])
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        self.assertEqual(task_event, tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Test"))
+        self.assertEqual(task_event, tree.search(TimeInterval(datetime(2025, 11, 1), datetime(2025, 11, 2))).get_event("Test"))
+        self.assertEqual(task_event, tree.search(TimeInterval(datetime(2025, 10, 5), datetime(2025, 10, 6))).get_event("Test"))
+        self.assertEqual(3, tree.get_size())
+
+    def test_get_size(self):
+        tree = TimeTree()
+        
+        self.assertEqual(0, tree.get_size())
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        self.assertEqual(1, tree.get_size())
+
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+        task_event2 = Event(temp_task2, 10, 20, 10, 25)
+        tree.insert(task_event2)
+
+        self.assertEqual(2, tree.get_size())
+
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        tree.insert(task_event3)
+
+        self.assertEqual(2, tree.get_size())
+
+        tree.delete(task_event)
+
+        self.assertEqual(2, tree.get_size())
+
+        tree.delete(task_event3)
+
+        self.assertEqual(1, tree.get_size())
+
+    def test_delete(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+        task_event2 = Event(temp_task2, 10, 20, 10, 25)
+        tree.insert(task_event2)
+
+        temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        tree.insert(task_event3)
+
+        self.assertEqual(2,  tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_num_events())
+
+        tree.delete(task_event)
+
+        self.assertEqual(1,  tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_num_events())
+        self.assertEqual(task_event3, tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Reminder"))
+
+        tree.delete(task_event3)
+
+        with self.assertRaises(ValueError):
+            tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+
+    def test_overlap_search(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        temp_task2 = TemporalTask("Test", "Example text", datetime(2025, 10, 4), datetime(2025, 10, 6))
+        task_event2 = Event(temp_task2, 20, 15, 10, 25)
+        tree.insert(task_event2)
+
+        temp_task3 = TemporalTask("Test", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+        task_event3 = Event(temp_task3, 20, 15, 10, 25)
+        tree.insert(task_event3)
+
+        events = [task_event, task_event2, task_event3]
+
+        self.assertEqual(3, len(tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))))
+        for event in events:
+            self.assertIn(event, tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4))))
+
+    def test_search(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        self.assertEqual(task_event, tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Test"))
+
+    def test_search_invalid(self):
+        tree = TimeTree()
+        
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        task_event = Event(temp_task, 20, 15, 10, 25)
+        tree.insert(task_event)
+
+        with self.assertRaises(ValueError):
+            tree.search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 3)))
 
 if __name__ == '__main__':
     unittest.main()

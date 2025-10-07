@@ -140,11 +140,11 @@ class TemporalTaskTests(unittest.TestCase):
     def test_add_schedule_interval(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
         task.add_schedule_interval(TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11)))
-        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)), TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 11))])
         
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
         task.add_schedule_interval(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)))
-        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10)), TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
         
     def test_add_schedule_interval_invalid_values(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))

@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from dataclasses import dataclass, field
 import math
 import bisect
+from collections import deque
 
 # Move these somewhere else
 RC = 1 # Rescheduling cost
@@ -48,6 +49,9 @@ class TimeInterval:
       
     def get_interval(self):
         return (self.start_date, self.end_date)
+
+    def is_overlapping(self, interval: TimeInterval):
+        return self.start_date <= interval.end_date and interval.start_date <= self.end_date
 
 @dataclass
 class Task:
@@ -125,7 +129,12 @@ class TemporalTask(Task):
         if self._startline and self._deadline and (self._deadline - self._startline) < timedelta(seconds=5):
             raise ValueError("startline → deadline must be at least 5 seconds apart.")
         for interval in self._schedule_intervals:
-            if (self._startline and interval.start_date < self._startline) or (self._deadline and interval.end_date > self._deadline):
+            if (
+                (self._startline and interval.start_date < self._startline) or 
+                (self._deadline and interval.end_date > self._deadline) or 
+                (interval.start_date < self._start_date) or
+                (interval.end_date < self._end_date) 
+            ):
                 raise ValueError("All reschedule periods must be within startline and deadline.")
 
     def __eq__(self, other):
@@ -161,9 +170,25 @@ class TemporalTask(Task):
         return self._schedule_intervals.copy()
 
     def add_schedule_interval(self, interval: TimeInterval):
-        if (self._startline and interval.start_date < self._startline or self._deadline and interval.end_date > self._deadline):
-            raise ValueError("Added period must be within the period of startline, and deadline")
-        self._schedule_intervals.append(interval)
+        if (
+            (self._startline and interval.start_date < self._startline) or 
+            (self._deadline and interval.end_date > self._deadline) or 
+            (interval.start_date < self._start_date) or
+            (interval.end_date < self._end_date) 
+        ):            
+            raise ValueError("Added period must be within the interval of [start_date, end_date] and [start_line, end_line]")
+        
+        merge_intervals = [] 
+        for s_interval in self._schedule_intervals:
+            if (s_interval.is_overlapping(interval)):
+                merge_intervals.append(s_interval) 
+
+        merged_interval = interval
+        for merger in merge_intervals:
+            self._schedule_intervals.remove(merger)
+            merged_interval = TimeInterval(min(merged_interval.start_date, merger.start_date), max(merged_interval.end_date, merger.end_date)) 
+        
+        self._schedule_intervals.append(merged_interval)
 
 @dataclass
 class Goal(TemporalTask):
@@ -463,6 +488,12 @@ class Event:
         return min((GW * self._goal_value) + (RW * self._routine_value) + (PW * self._personal_value) + (REW * self._relational_value), 100)
     
     @property
+    def schedule_intervals(self):
+        if (isinstance(self._task, TemporalTask)):
+            return self._task.get_schedule_intervals()
+        return None
+    
+    @property
     def start_date(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_start_date()
@@ -751,7 +782,7 @@ class TimeTree:
         return interval1.start_date <= interval2.end_date and interval2.start_date <= interval1.end_date
 
     def _overlap_search_recursive(self, node: Node, interval: TimeInterval, overlaps: List):
-        if self._is_overlapping(node.key, interval):
+        if node.key.is_overlapping(interval):
             overlaps.extend(node.get_events())
             
         if node.left is not None and node.left.max >= interval.start_date:
@@ -815,20 +846,34 @@ class TimeTree:
 
 @dataclass
 class Calendar:
-    _events: TimeTree
+    _time_tree: TimeTree
     _todos: List
     _dated_todos: List
 
     def __init__(self):
-        self._events = TimeTree()
+        self._time_tree = TimeTree()
         self._dated_todos = []
         self._todos = []
 
     def _sort_day_by_priority(self, day: date):
-        events = self._events.search(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+        events = self._time_tree.search(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
         if events:
             events.sort(key=lambda event: event.get_priority_score(), reverse=True)
         return events
+    
+    def _AC3(domains, arcs, constraint):
+        queue = []
+        constraints = {}
+        for arc in arcs:
+            queue.append(arc)
+        while (len(queue) != 0):
+            node, n_node = queue.pop(0)
+            for d1o in domains[node]:
+                for d2o in domains[n_node]:
+                    if (constraint(d1o, d2o)):
+                        constraint[arc][d1o].append(d2o)
+            
+            
 
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
@@ -839,31 +884,33 @@ class Calendar:
             else:
                 self._todos.append(task)
         elif isinstance(task, TemporalTask):
-            self._events.insert(new_event)
+            self._time_tree.insert(new_event)
     
     def get_events(self, TimeInterval: TimeInterval):
-        return self._events.overlap_search(TimeInterval)
+        return self._time_tree.overlap_search(TimeInterval)
 
     def generate_schedule(self, date: datetime):
-        # CSP trying to fit everything into this. 
-        # Needs to create booleans based on the available reschedule periods of each event
-        
-        
-        # Retrieve all events for the day:
-        # 
-        # Enforce arc consistency
-        # for event in events:
-        #   if event's neighbor
-        # 
-        # recursive schedule function():
-        #   for events in the remaining events to be scheduled:
-        #       if event can be scheduled:
-        #           result = rescursive_schedule_function():
-        #           if result is not None:
-        #               return result
-        #       return None
-        
+        date_interval = TimeInterval(datetime(date.year, date.month, date.day), datetime(date.year, date.month, date.day, 23, 59, 59))
+        sorted_events = self._time_tree.overlap_search(date_interval).sort(key=lambda event: event.interval.start_date)
 
+        domains = []
+        arcs = []
+        
+        for event in events:
+            pass
+            # Scanline run through events
+        
+        step = timedelta(minutes=1)
+        for event in sorted_events:
+            domains[event] = []
+            for interval in event.schedule_intervals:
+                current_time = interval.start_date 
+                while current_time <= interval.end_date:
+                    domains[event].append(current_time)
+                    current_time += step
+                    
+        self.AC3(domains, arcs)
+        
         return
 
 class VEGA:

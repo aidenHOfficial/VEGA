@@ -1063,8 +1063,10 @@ class TimeTreeTests(unittest.TestCase):
         events = [task_event, task_event2, task_event3]
 
         self.assertEqual(3, len(tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))))
+        blocks = tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))
+        block_events = [block.event for block in blocks]
         for event in events:
-            self.assertIn(event, tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4))))
+            self.assertIn(event, block_events)
 
     def test_search(self):
         tree = TimeTree()
@@ -1084,6 +1086,67 @@ class TimeTreeTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             tree.search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 3)))
+
+class CalendarTests(unittest.TestCase):
+    def test(self):
+        cal = Calendar()
+
+        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        cal.schedule_event(temp_task, 20, 15, 10, 25)
+
+        temp_task2 = TemporalTask("Test2", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+        cal.schedule_event(temp_task2, 20, 15, 10, 25)
+
+        temp_task3 = TemporalTask("Test3", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+        cal.schedule_event(temp_task2, 20, 15, 10, 25)
+
+        cal.generate_schedule(datetime(2025, 10, 2))
+
+
+
+
+
+
+    # def test_add_event(self):
+    #     calendar = Calendar()
+        
+    # temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    # calendar.schedule_event(temp_task, 20, 15, 10, 25)
+
+    #     self.assertEqual(temp_task, calendar.get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), "Test")[0].get_task("Test"))
+
+    # def test_remove_event(self):
+    #     calendar = Calendar()
+        
+    #     temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    #     task_event = Event(temp_task, 20, 15, 10, 25)
+    #     calendar.add_event(task_event)
+
+    #     calendar.remove_event(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), "Test")
+
+    #     with self.assertRaises(ValueError):
+    #         calendar.get_event(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), "Test")
+
+    # def test_remove_event_invalid(self):
+    #     calendar = Calendar()
+        
+    #     temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    #     task_event = Event(temp_task, 20, 15, 10, 25)
+    #     calendar.add_event(task_event)
+
+    #     with self.assertRaises(ValueError):
+    #         calendar.remove_event(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 3)), "Test")
+    #     with self.assertRaises(ValueError):
+    #         calendar.remove_event(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), "Anything")
+
+    # def test_get_event(self):
+    #     calendar = Calendar()
+        
+    #     temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    #     task_event = Event(temp_task, 20, 15, 10, 25)
+    #     calendar.add_event(task_event)
+
+    #     self.assertEqual(task_event, calendar
 
 if __name__ == '__main__':
     unittest.main()

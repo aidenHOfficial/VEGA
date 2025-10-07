@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, Tuple
-from collections import defaultdict
+from typing import Optional, List, Dict
 from datetime import date, datetime, timedelta
 from dataclasses import dataclass, field
 import math
 import bisect
+from collections import deque
 
 # Move these somewhere else
 RC = 1 # Rescheduling cost
@@ -48,6 +48,22 @@ class TimeInterval:
       
     def get_interval(self):
         return (self.start_date, self.end_date)
+
+class EventBlock:
+    interval: TimeInterval
+    event: Event
+
+    def __init__(self, interval: TimeInterval, event: Event):
+        self.interval = interval
+        self.event = event
+
+    @property
+    def start_date(self):
+        return self.interval.start_date
+    
+    @property
+    def end_date(self):
+        return self.interval.end_date
 
 @dataclass
 class Task:
@@ -434,6 +450,17 @@ class Event:
             if (value < 0 or value > 100 / len(check_list)):
                 raise ValueError(f"{value} can not be less than 0, or greater than {100 / len(check_list)}")
 
+    def __eq__(self, other):
+        if not isinstance(other, Event):
+            return NotImplemented
+        return self._task == other._task and self._goal_value == other._goal_value and self._routine_value == other._routine_value and self._personal_value == other._personal_value and self._relational_value == other._relational_value
+
+    def __str__(self):
+        return f"Event(Task: {self._task.get_title()}, goal_value: {self._goal_value}, routine_value: {self._routine_value}, personal_value: {self._personal_value}, relational_value: {self._relational_value})"
+
+    def __hash__(self):
+        return hash(self.__str__())
+
     def _time_difference_to_now(self):
 
         if isinstance(self._task, TemporalTask):
@@ -752,7 +779,8 @@ class TimeTree:
 
     def _overlap_search_recursive(self, node: Node, interval: TimeInterval, overlaps: List):
         if self._is_overlapping(node.key, interval):
-            overlaps.extend(node.get_events())
+            for event in node.get_events():
+                overlaps.append(EventBlock(node.key, event))
             
         if node.left is not None and node.left.max >= interval.start_date:
             self._overlap_search_recursive(node.left, interval, overlaps)
@@ -807,6 +835,42 @@ class TimeTree:
 
         return overlaps
     
+    def sweepline_overlap_search(self, interval: TimeInterval):
+        """Generates a mapping of all overlapping events within the given interval using the sweep line algorithm.
+
+        Args:
+            interval (TimeInterval): The time interval to search for overlapping events.
+
+        Returns:
+            dict: A dictionary mapping each event to a list of events that overlap with it.
+        """
+
+        if self._root is None:
+            return None
+        overlapping_blocks = []
+        self._overlap_search_recursive(self._root, interval, overlapping_blocks)
+
+        sweep_line_points = []
+        for block in overlapping_blocks:
+            sweep_line_points.append({"time": block.start_date, "liminal": "start", "event": block.event})
+            sweep_line_points.append({"time": block.end_date, "liminal": "end", "event": block.event})
+        sweep_line_points.sort(key=lambda e: (e["time"], 0 if e["liminal"] == "start" else 1))
+
+        overlaps = {}
+        active_points = []
+        for point in sweep_line_points:
+            if point[1] == "start":
+                for active_point in active_points:
+                    overlaps[point["event"]] = active_point
+                    overlaps[active_point] = point["event"]
+            
+                active_points.append([point["event"]])
+
+            elif point["liminal"] == "end":
+                del active_points[point["event"]]
+
+        return overlaps
+
     def inorder(self):
         return self._inorder_recursive(self._root)
 
@@ -815,56 +879,64 @@ class TimeTree:
 
 @dataclass
 class Calendar:
-    _events: TimeTree
+    _time_tree: TimeTree
     _todos: List
     _dated_todos: List
 
     def __init__(self):
-        self._events = TimeTree()
+        self._time_tree = TimeTree()
         self._dated_todos = []
         self._todos = []
 
-    def _sort_day_by_priority(self, day: date):
-        events = self._events.search(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+    def _is_overlapping(self, interval1: TimeInterval, interval2: TimeInterval):
+        return interval1.start_date <= interval2.end_date and interval2.start_date <= interval1.end_date
+
+    def _get_day_events(self, day: date):
+        return self._get_events(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+
+    def _get_day_events_sorted_by_priority(self, day: date):
+        events = self._get_day_events(day)
         if events:
             events.sort(key=lambda event: event.get_priority_score(), reverse=True)
         return events
+    
+    def _get_events(self, TimeInterval: TimeInterval):
+        return self._time_tree.overlap_search(TimeInterval)
 
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
         
-        if isinstance(task, Task):
+        if isinstance(task, TemporalTask):
+            self._time_tree.insert(new_event)
+        elif isinstance(task, Task):
             if (task._deadline):
                 bisect.insort(self._dated_todos, new_event)
             else:
                 self._todos.append(task)
-        elif isinstance(task, TemporalTask):
-            self._events.insert(new_event)
     
     def get_events(self, TimeInterval: TimeInterval):
-        return self._events.overlap_search(TimeInterval)
+        blocks = self._time_tree.overlap_search(TimeInterval)
+        return [event for block in blocks for event in block.events] if blocks else []
 
     def generate_schedule(self, date: datetime):
-        # CSP trying to fit everything into this. 
-        # Needs to create booleans based on the available reschedule periods of each event
-        
-        
-        # Retrieve all events for the day:
-        # 
-        # Enforce arc consistency
-        # for event in events:
-        #   if event's neighbor
-        # 
-        # recursive schedule function():
-        #   for events in the remaining events to be scheduled:
-        #       if event can be scheduled:
-        #           result = rescursive_schedule_function():
-        #           if result is not None:
-        #               return result
-        #       return None
-        
+        blocks = self._get_day_events(date.date())
+        blocks.sort(key=lambda b: (b.start_date, b.end_date))
+
+        constraints = {}
+        domains = {}
+        neighbors = {}
+
+        date_start = datetime(date.year, date.month, date.day)
+        date_end = datetime(date.year, date.month, date.day, 23, 59, 59)
+        date_time_interval = TimeInterval(date_start, date_end)
+       
+        arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
+
+        self.AC3(list(domains.keys()), domains, neighbors, constraints)
 
         return
+
+
 
 class VEGA:
     def __init__(self):

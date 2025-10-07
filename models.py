@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import math
 import bisect
 from collections import deque
+from collections import deque
 
 # Move these somewhere else
 RC = 1 # Rescheduling cost
@@ -459,6 +460,17 @@ class Event:
             if (value < 0 or value > 100 / len(check_list)):
                 raise ValueError(f"{value} can not be less than 0, or greater than {100 / len(check_list)}")
 
+    def __eq__(self, other):
+        if not isinstance(other, Event):
+            return NotImplemented
+        return self._task == other._task and self._goal_value == other._goal_value and self._routine_value == other._routine_value and self._personal_value == other._personal_value and self._relational_value == other._relational_value
+
+    def __str__(self):
+        return f"Event(Task: {self._task.get_title()}, goal_value: {self._goal_value}, routine_value: {self._routine_value}, personal_value: {self._personal_value}, relational_value: {self._relational_value})"
+
+    def __hash__(self):
+        return hash(self.__str__())
+
     def _time_difference_to_now(self):
 
         if isinstance(self._task, TemporalTask):
@@ -718,7 +730,7 @@ class TimeTree:
             return self._left_rotate(node)
 
         return node
-
+    
     def _delete_node_recursive(self, node: Node, event: Event, key: TimeInterval):
         if node is None:
             return node
@@ -838,6 +850,42 @@ class TimeTree:
 
         return overlaps
     
+    def sweepline_overlap_search(self, interval: TimeInterval):
+        """Generates a mapping of all overlapping events within the given interval using the sweep line algorithm.
+
+        Args:
+            interval (TimeInterval): The time interval to search for overlapping events.
+
+        Returns:
+            dict: A dictionary mapping each event to a list of events that overlap with it.
+        """
+
+        if self._root is None:
+            return None
+        overlapping_blocks = []
+        self._overlap_search_recursive(self._root, interval, overlapping_blocks)
+
+        sweep_line_points = []
+        for block in overlapping_blocks:
+            sweep_line_points.append({"time": block.start_date, "liminal": "start", "event": block.event})
+            sweep_line_points.append({"time": block.end_date, "liminal": "end", "event": block.event})
+        sweep_line_points.sort(key=lambda e: (e["time"], 0 if e["liminal"] == "start" else 1))
+
+        overlaps = {}
+        active_points = []
+        for point in sweep_line_points:
+            if point[1] == "start":
+                for active_point in active_points:
+                    overlaps[point["event"]] = active_point
+                    overlaps[active_point] = point["event"]
+            
+                active_points.append([point["event"]])
+
+            elif point["liminal"] == "end":
+                del active_points[point["event"]]
+
+        return overlaps
+    
     def inorder(self):
         return self._inorder_recursive(self._root)
 
@@ -855,8 +903,11 @@ class Calendar:
         self._dated_todos = []
         self._todos = []
 
-    def _sort_day_by_priority(self, day: date):
-        events = self._time_tree.search(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+    def _get_day_events(self, day: date):
+        return self._get_events(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
+
+    def _get_day_events_sorted_by_priority(self, day: date):
+        events = self._get_day_events(day)
         if events:
             events.sort(key=lambda event: event.get_priority_score(), reverse=True)
         return events
@@ -873,43 +924,35 @@ class Calendar:
                     if (constraint(d1o, d2o)):
                         constraint[arc][d1o].append(d2o)
             
-            
-
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
         
-        if isinstance(task, Task):
+        if isinstance(task, TemporalTask):
+            self._time_tree.insert(new_event)
+        elif isinstance(task, Task):
             if (task._deadline):
                 bisect.insort(self._dated_todos, new_event)
             else:
                 self._todos.append(task)
-        elif isinstance(task, TemporalTask):
-            self._time_tree.insert(new_event)
     
     def get_events(self, TimeInterval: TimeInterval):
         return self._time_tree.overlap_search(TimeInterval)
-
+    
     def generate_schedule(self, date: datetime):
-        date_interval = TimeInterval(datetime(date.year, date.month, date.day), datetime(date.year, date.month, date.day, 23, 59, 59))
-        sorted_events = self._time_tree.overlap_search(date_interval).sort(key=lambda event: event.interval.start_date)
+        blocks = self._get_day_events(date.date())
+        blocks.sort(key=lambda b: (b.start_date, b.end_date))
 
-        domains = []
-        arcs = []
-        
-        for event in events:
-            pass
-            # Scanline run through events
-        
-        step = timedelta(minutes=1)
-        for event in sorted_events:
-            domains[event] = []
-            for interval in event.schedule_intervals:
-                current_time = interval.start_date 
-                while current_time <= interval.end_date:
-                    domains[event].append(current_time)
-                    current_time += step
-                    
-        self.AC3(domains, arcs)
+        constraints = {}
+        domains = {}
+        neighbors = {}
+
+        date_start = datetime(date.year, date.month, date.day)
+        date_end = datetime(date.year, date.month, date.day, 23, 59, 59)
+        date_time_interval = TimeInterval(date_start, date_end)
+       
+        arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
+
+        self.AC3(list(domains.keys()), domains, neighbors, constraints)
         
         return
 

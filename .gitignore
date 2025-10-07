@@ -1,2 +1,4 @@
 env
 debug.txt
+__pycache__/
+*.pyc

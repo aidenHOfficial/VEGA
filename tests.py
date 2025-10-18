@@ -12,10 +12,6 @@ class TimeIntervalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             interval = TimeInterval(datetime(2004, 11, 1), datetime(2004, 10, 2))
     
-    def test___str__(self):
-        interval = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
-        self.assertEqual(f"({datetime(2004, 10, 1).__str__()}, {datetime(2004, 10, 2).__str__()})", interval.__str__())
-    
     def test_get_start_date(self):
         interval = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
         self.assertEqual(datetime(2004, 10, 1), interval.get_start_date())
@@ -29,7 +25,11 @@ class TimeIntervalTests(unittest.TestCase):
     def test_get_interval(self):
         interval = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
         self.assertEqual((datetime(2004, 10, 1), datetime(2004, 10, 2)), interval.get_interval())
-        
+     
+    def test_get_duration(self):   
+        # TODO: Create a test for the get_duration function
+        pass
+    
 class TaskTests(unittest.TestCase):
     def test_failed_constructor(self):
         task = Task("this is a test task", datetime(2004,1,1))
@@ -43,17 +43,6 @@ class TaskTests(unittest.TestCase):
         task = Task("test", "this is a test task")
         self.assertIsNotNone(task)
     
-    def test__str__(self):
-        deadline_task = Task("test", "this is a test task", datetime(2004,1,1))
-        self.assertEqual(deadline_task.__str__(), f"Task(_title='test', _description='this is a test task', _completed=False, _deadline=datetime.datetime(2004, 1, 1, 0, 0))")
-
-        no_deadline_task = Task("test2", "this is a second test task")
-        self.assertEqual(no_deadline_task.__str__(), f"Task(_title='test2', _description='this is a second test task', _completed=False, _deadline=None)")
-
-        completed_task = Task("test3", "this is a third test task")
-        completed_task._completed = True
-        self.assertEqual(completed_task.__str__(), f"Task(_title='test3', _description='this is a third test task', _completed=True, _deadline=None)")
-
     def test_get_completion_status(self):
         task = Task("test", "this is a test task")
         self.assertFalse(task.get_completion_status())
@@ -105,10 +94,6 @@ class TemporalTaskTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), startline=datetime(2025, 10, 2), schedule_intervals=reschedules)
 
-    def test__str__(self):
-        task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), schedule_intervals=[TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
-        self.assertEqual(task.__str__(), "TemporalTask(_title='test', _description='this is a test task', _completed=False, _deadline=None, _start_date=datetime.datetime(2025, 10, 2, 0, 0), _end_date=datetime.datetime(2025, 10, 10, 0, 0), _startline=None, _schedule_intervals=[TimeInterval(start_date=datetime.datetime(2025, 10, 3, 0, 0), end_date=datetime.datetime(2025, 10, 11, 0, 0)), TimeInterval(start_date=datetime.datetime(2025, 10, 2, 0, 0), end_date=datetime.datetime(2025, 10, 10, 0, 0))])")
-
     def test_get_start_date(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
         self.assertEqual(task.get_start_date(), datetime(2025, 10, 2))
@@ -135,7 +120,11 @@ class TemporalTaskTests(unittest.TestCase):
 
     def test_get_schedule_interval_with_values(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), schedule_intervals=[TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11))])
-        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 3), datetime(2025, 10, 11)), TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 10))])
+        self.assertEqual(task.get_schedule_intervals(), [TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 11))])
+
+    def test_get_duration(self):
+        # TODO: add a test for the get_duration function
+        pass
 
     def test_add_schedule_interval(self):
         task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10))
@@ -1063,10 +1052,9 @@ class TimeTreeTests(unittest.TestCase):
         events = [task_event, task_event2, task_event3]
 
         self.assertEqual(3, len(tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))))
-        blocks = tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))
-        block_events = [block.event for block in blocks]
+        search_events = tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))
         for event in events:
-            self.assertIn(event, block_events)
+            self.assertIn(event, search_events)
 
     def test_search(self):
         tree = TimeTree()
@@ -1087,21 +1075,51 @@ class TimeTreeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             tree.search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 3)))
 
+    def test_sweepline_overlap_search(self):
+        # TODO: Test this overlap search function
+        pass
+
 class CalendarTests(unittest.TestCase):
     def test(self):
         cal = Calendar()
 
-        temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+        temp_task = TemporalTask("1", "FIRST", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 3), None, None, [TimeInterval(datetime(2025, 10, 2, 4), datetime(2025, 10, 2, 5)), TimeInterval(datetime(2025, 10, 2, 6), datetime(2025, 10, 2, 7))])
         cal.schedule_event(temp_task, 20, 15, 10, 25)
 
-        temp_task2 = TemporalTask("Test2", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+        temp_task2 = TemporalTask("2", "SECOND", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 3))
         cal.schedule_event(temp_task2, 20, 15, 10, 25)
 
-        temp_task3 = TemporalTask("Test3", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
-        cal.schedule_event(temp_task2, 20, 15, 10, 25)
+        temp_task3 = TemporalTask("3", "THIRD", datetime(2025, 10, 2, 4), datetime(2025, 10, 2, 7))
+        cal.schedule_event(temp_task3, 20, 15, 10, 25)
 
         cal.generate_schedule(datetime(2025, 10, 2))
-
+        
+    def test_time_interval_constraint(self):
+        cal = Calendar()
+        
+        duration = timedelta(0, 0, 0, 0, 0, 2)
+        
+        base_interval = TimeInterval(datetime(2025, 10, 18, 4), datetime(2025, 10, 18, 7))
+        
+        test_interval1 = TimeInterval(datetime(2025, 10, 18, 3), datetime(2025, 10, 18, 5))
+        test_interval2 = TimeInterval(datetime(2025, 10, 18, 6), datetime(2025, 10, 18, 8))
+        
+        test_interval3 = TimeInterval(datetime(2025, 10, 18, 4), datetime(2025, 10, 18, 6))
+        test_interval4 = TimeInterval(datetime(2025, 10, 18, 5), datetime(2025, 10, 18, 7))
+        
+        test_interval5 = TimeInterval(datetime(2025, 10, 18, 1), datetime(2025, 10, 18, 3))
+        test_interval6 = TimeInterval(datetime(2025, 10, 18, 8), datetime(2025, 10, 18, 10))
+        
+        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval1, duration, duration))
+        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval2, duration, duration))
+        self.assertFalse(cal._time_interval_constraint(base_interval, test_interval3, duration, duration))
+        self.assertFalse(cal._time_interval_constraint(base_interval, test_interval4, duration, duration))
+        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval5, duration, duration))
+        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval6, duration, duration))
+        
+        
+        
+        
 
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, Tuple
+import json
+from typing import Optional, List, Dict, Set, Tuple
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from dataclasses import dataclass, field
@@ -16,12 +17,23 @@ RW = 1 # Routine weight
 PW = 1 # Personal weight
 REW = 1 # Relational weight
 
+filename = "debug.json"
 def write_to_debug_file(string):
-    with open("debug.txt", 'a') as f:
-        f.write(string)
+    with open(filename, 'w') as f:
+        json.dump(string, f, indent=4) 
         
-with open("debug.txt", 'w') as f:
-    f.write("")
+def stringify_objects(obj):
+    if isinstance(obj, dict):
+        return {k: stringify_objects(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [stringify_objects(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(stringify_objects(v) for v in obj)
+    elif isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    else:
+        # For any other custom object
+        return str(obj)
 
 @dataclass
 class TimeInterval:
@@ -491,7 +503,7 @@ class Event:
         return self._task == other._task and self._goal_value == other._goal_value and self._routine_value == other._routine_value and self._personal_value == other._personal_value and self._relational_value == other._relational_value
 
     def __str__(self):
-        return f"Event(\n\tTask: {self._task.get_title()},\n\tgoal_value: {self._goal_value},\n\troutine_value: {self._routine_value},\n\tpersonal_value: {self._personal_value},\n\trelational_value: {self._relational_value}\n)"
+        return f"Event(Task: {self._task.get_title()}, goal_value: {self._goal_value}, routine_value: {self._routine_value}, personal_value: {self._personal_value}, relational_value: {self._relational_value})"
 
     def __hash__(self):
         return hash(self.__str__())
@@ -825,7 +837,7 @@ class TimeTree:
     
     def _overlap_search_recursive(self, node: Node, interval: TimeInterval, overlaps: List):
         if node.key.is_overlapping(interval):
-            overlaps.extend(node.get_events())
+            overlaps.extend({"event": event, "time": node.key} for event in node.get_events())
             
         if node.left is not None and node.left.max >= interval.start_date:
             self._overlap_search_recursive(node.left, interval, overlaps)
@@ -890,29 +902,157 @@ class TimeTree:
     
         points = []
         for e in overlapping_events:
-            points.append((e.start_date, 1, e))
-            points.append((e.end_date, -1, e))
-        points.sort(key=lambda x: (x[0], -x[1]))
+            time = e["time"]
+            event = e["event"]
+            points.append((time, time.start_date, 1, event))
+            points.append((time, time.end_date, -1, event))
+        points.sort(key=lambda x: (x[1], -x[2]))
     
         active = set()
-        overlaps = defaultdict(set)
+        overlaps = {}
     
-        for time, typ, event in points:
-            if typ == 1: 
-                for other in active:
-                    overlaps[event].add(other)
-                    overlaps[other].add(event)
-                active.add(event)
+        for time, pos, typ, event in points:
+            if (event not in overlaps):
+                overlaps[event] = {}
+            formatted_event = (event, time)
+            if typ == 1:
+                for active_event in active:
+                    
+                    if (active_event[0] not in overlaps):
+                        overlaps[active_event[0]] = {}
+                    if (event not in overlaps[active_event[0]]):
+                        overlaps[active_event[0]][event] = {}
+                    if (active_event[0] not in overlaps[event]):
+                        overlaps[event][active_event[0]] = {}
+                    if (time not in overlaps[event][active_event[0]]):
+                        overlaps[event][active_event[0]][time] = set()
+                    if (active_event[1] not in overlaps[active_event[0]][event]):
+                        overlaps[active_event[0]][event][active_event[1]] = set()
+                        
+                    overlaps[event][active_event[0]][time].add(active_event[1])
+                    overlaps[active_event[0]][event][active_event[1]].add(time)
+                active.add(formatted_event)
             else:
-                active.remove(event)
-    
-        return {e: list(v) for e, v in overlaps.items()}    
+                active.remove(formatted_event)
+  
+        return overlaps  
     
     def inorder(self):
         return self._inorder_recursive(self._root)
 
     def print_tree(self):
         self._print_tree_recursive(self._root, "", True)
+
+class CSP:
+    def __init__(self):
+        self.domains: Dict[Event, List[TimeInterval]] = {}
+        self.arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = set()
+
+    def add_event(self, event: Event, intervals: List[TimeInterval]):
+        self.domains[event] = intervals
+
+    def add_arc(self, e1: Event, e2: Event, t1: TimeInterval, t2: TimeInterval):
+        if (e1, e2) not in self.arcs:
+            self.arcs[(e1, e2)] = set()
+        self.arcs[(e1, e2)].add((t1, t2))
+        
+    def _time_interval_constraint(self, inter1: TimeInterval, inter2: TimeInterval, event_duration1: timedelta, event_duration2: timedelta):
+        if (inter1.end_date < inter2.start_date or inter2.end_date < inter1.start_date):
+            return True
+        
+        if (inter2.start_date <= inter1.start_date and inter1.end_date <= inter2.end_date):
+            sliding_room = inter1.get_duration() - event_duration1
+            left_space = (inter1.start_date - inter2.start_date) + sliding_room
+            right_space = (inter2.end_date - inter1.end_date) + sliding_room
+            return left_space >= event_duration2 or right_space >= event_duration2
+        if (inter1.start_date <= inter2.start_date and inter2.end_date <= inter1.end_date):
+            sliding_room = inter2.get_duration() - event_duration2
+            left_space = (inter2.start_date - inter1.start_date) + sliding_room
+            right_space = (inter1.end_date - inter2.end_date) + sliding_room
+            return left_space >= event_duration1 or right_space >= event_duration1
+        
+        total_window = max(inter1.end_date, inter2.end_date) - min(inter1.start_date, inter2.start_date)
+        if event_duration1 + event_duration2 <= total_window:
+            return True
+    
+    def _AC3(self):
+        queue = []
+        constraints = {}
+        
+        queue = self.arcs.items().copy()
+        
+        while (len(queue) != 0):
+            
+            node, neighbor = queue.pop(0)
+            
+            # Can guarantee that the task for all of the nodes are temporal tasks, which have the get_duration function because
+            # the generate_schedule function will only pass temporal tasks from the callendar into this function
+            node_duration = node.get_duration()
+            neighbor_duration = neighbor.get_duration()
+            
+            if node not in constraints:
+                constraints[node] = {}
+            if neighbor not in constraints[node]:
+                constraints[node][neighbor] = {}
+                
+            if neighbor not in constraints:
+                constraints[neighbor] = {}
+            if node not in constraints[neighbor]:
+                constraints[neighbor][node] = {}
+            
+            for d1o in self.domains[node].copy():
+                for d2o in self.domains[neighbor].copy():
+                    
+                    if (self._time_interval_constraint(d1o, d2o, node_duration, neighbor_duration)):
+                        
+                        if d1o not in constraints[node][neighbor]:
+                            constraints[node][neighbor][d1o] = set()
+                        if d2o not in constraints[neighbor][node]:
+                            constraints[neighbor][node][d2o] = set()
+                        
+                        constraints[node][neighbor][d1o].add(d2o)
+                        constraints[neighbor][node][d2o].add(d1o)
+                
+                if d1o not in constraints[node][neighbor]:
+                    self._revise(node, neighbor, d1o, constraints, queue)
+        
+        return constraints
+                    
+    def _revise(self, node, neighbor, bad_dom, constraints, queue):
+        # Removal case
+        # 1. Remove option from domain
+        # 2. Remove option from other constraint pairs
+        # 3. Add other arcs which start with node to queue if not already in
+        self.domains[node].remove(bad_dom)
+                    
+        for check_neighbor in constraints[node]:
+            if (check_neighbor == neighbor):
+                continue
+            # Can add arcs to queue and remove invalid constraints from those neighboring arcs at the same time
+            # You can use the neighbor subset of those in constraints because if it isn't already in constraints, then it's
+            # still in the queue
+                        
+            if ((check_neighbor, node) not in queue):
+                queue.append((check_neighbor, node))
+            
+            # revise_neighbors = []
+            if bad_dom in constraints[node][check_neighbor]:
+                for constraint_to_fix in constraints[node][check_neighbor][bad_dom]:
+                    constraints[check_neighbor][node][constraint_to_fix].remove(bad_dom)
+                    
+                    # Check if this removal eliminates the current constraint domain option of neighbor            
+                    if (len(constraints[check_neighbor][node][constraint_to_fix]) == 0):
+                        constraints[check_neighbor][node].pop(constraint_to_fix)
+                        self._revise(check_neighbor, node, constraint_to_fix, constraints, queue)
+                        # revise_neighbors.append(check_neighbor)
+                        
+                constraints[node][check_neighbor].pop(bad_dom)
+                            
+            # for revise_neighbor in revise_neighbors:
+                # self._revise(revise_neighbor, node, constraint_to_fix, domains, constraints, queue)
+                    
+                        
+        return constraints
 
 @dataclass
 class Calendar:
@@ -934,107 +1074,6 @@ class Calendar:
             events.sort(key=lambda event: event.get_priority_score(), reverse=True)
         return events
     
-    def _time_interval_constraint(self, inter1: TimeInterval, inter2: TimeInterval, event_duration1: timedelta, event_duration2: timedelta):
-        if (inter1.end_date < inter2.start_date or inter2.end_date < inter1.start_date):
-            return True
-        
-        if (inter2.start_date <= inter1.start_date and inter1.end_date <= inter2.end_date):
-            sliding_room = inter1.get_duration() - event_duration1
-            left_space = (inter1.start_date - inter2.start_date) + sliding_room
-            right_space = (inter2.end_date - inter1.end_date) + sliding_room
-            return left_space >= event_duration2 or right_space >= event_duration2
-        if (inter1.start_date <= inter2.start_date and inter2.end_date <= inter1.end_date):
-            sliding_room = inter2.get_duration() - event_duration2
-            left_space = (inter2.start_date - inter1.start_date) + sliding_room
-            right_space = (inter1.end_date - inter2.end_date) + sliding_room
-            return left_space >= event_duration1 or right_space >= event_duration1
-        
-        total_window = max(inter1.end_date, inter2.end_date) - min(inter1.start_date, inter2.start_date)
-        if event_duration1 + event_duration2 <= total_window:
-            return True
-            
-    
-    def _AC3(self, domains, arcs):
-        queue = []
-        constraints = {}
-        for node, neighbors in arcs.items():
-            for neighbor in neighbors:
-                if ((node, neighbor) not in queue):
-                    queue.append((node, neighbor))
-                    
-        while (len(queue) != 0):
-    
-            node, neighbor = queue.pop(0)
-            
-            # Can guarantee that the task for all of the nodes are temporal tasks, which have the get_duration function because
-            # the generate_schedule function will only pass temporal tasks from the callendar into this function
-            node_duration = node.get_duration()
-            neighbor_duration = neighbor.get_duration()
-            
-            if node not in constraints:
-                constraints[node] = {}
-            if neighbor not in constraints[node]:
-                constraints[node][neighbor] = {}
-                
-            if neighbor not in constraints:
-                constraints[neighbor] = {}
-            if node not in constraints[neighbor]:
-                constraints[neighbor][node] = {}
-            
-            for d1o in domains[node]:
-                for d2o in domains[neighbor]:
-                    
-                    if (self._time_interval_constraint(d1o, d2o, node_duration, neighbor_duration)):
-                        
-                        if d1o not in constraints[node][neighbor]:
-                            constraints[node][neighbor][d1o] = set()
-                        if d2o not in constraints[neighbor][node]:
-                            constraints[neighbor][node][d2o] = set()
-                            
-                        constraints[node][neighbor][d1o].add(d2o)
-                        constraints[neighbor][node][d2o].add(d1o)
-                
-                if d1o not in constraints[node][neighbor]:
-                    self._revise(node, neighbor, d1o, domains, constraints, queue)
-        
-        return constraints
-                    
-    def _revise(self, node, neighbor, bad_dom, domains, constraints, queue):
-        # Removal case
-        # 1. Remove option from domain
-        # 2. Remove option from other constraint pairs
-        # 3. Add other arcs which start with node to queue if not already in
-        domains[node].remove(bad_dom)
-                    
-        for check_neighbor in constraints[node]:
-            if (check_neighbor == neighbor):
-                continue
-            # Can add arcs to queue and remove invalid constraints from those neighboring arcs at the same time
-            # You can use the neighbor subset of those in constraints because if it isn't already in constraints, then it's
-            # still in the queue
-                        
-            if ((check_neighbor, node) not in queue):
-                queue.append((check_neighbor, node))
-            
-            # revise_neighbors = []
-            if bad_dom in constraints[node][check_neighbor]:
-                for constraint_to_fix in constraints[node][check_neighbor][bad_dom]:
-                    constraints[check_neighbor][node][constraint_to_fix].remove(bad_dom)
-                    
-                    # Check if this removal eliminates the current constraint domain option of neighbor            
-                    if (len(constraints[check_neighbor][node][constraint_to_fix]) == 0):
-                        constraints[check_neighbor][node].pop(constraint_to_fix)
-                        self._revise(check_neighbor, node, constraint_to_fix, domains, constraints, queue)
-                        # revise_neighbors.append(check_neighbor)
-                        
-                constraints[node][check_neighbor].pop(bad_dom)
-                            
-            # for revise_neighbor in revise_neighbors:
-                # self._revise(revise_neighbor, node, constraint_to_fix, domains, constraints, queue)
-                    
-                        
-        return constraints
-            
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
         
@@ -1050,7 +1089,8 @@ class Calendar:
         return self._time_tree.overlap_search(TimeInterval)
     
     def generate_schedule(self, date: datetime):
-        domains = {}
+        satis_prob = CSP()
+        domains = defaultdict(set)
 
         date_start = datetime(date.year, date.month, date.day)
         date_end = datetime(date.year, date.month, date.day, 23, 59, 59)
@@ -1058,17 +1098,47 @@ class Calendar:
                     
         arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
         
-        for event in arcs:
-            domains[event] = event.schedule_intervals
+        satis_prob.add_event
         
-        write_to_debug_file(f"domains:\n{"".join([f"{event}:\t({"".join([f"{value}\t" for value in values])})\n" for event, values in domains.items()])}\n)\n")
-        write_to_debug_file(f"arcs:\t(\n{"".join([f"{event}:\t(\n{"".join(f"{neighbor}\n" for neighbor in neighbors)}\n)\n" for event, neighbors in arcs.items()])}\n)")
-
+        domains_json = {}
+        arcs_json = {}
+        constraints_json = {}
+        
+        for event in arcs:
+            str_event = str(event)
+            domains_json[str_event] = [] 
+            arcs_json[str_event] = {}
+            for n_event in arcs[event]:
+                str_n_event = str(n_event)
+                arcs_json[str_event][str_n_event] = {}
+                for domain in arcs[event][n_event]:
+                    str_domain = str(domain)
+                    arcs_json[str_event][str_n_event][str_domain] = []
+                    domains_json[str_event].append(str_domain)
+                    domains[event].add(domain)
+                    for n_domain in arcs[event][n_event][domain]:
+                        arcs_json[str_event][str_n_event][str_domain].append(str(n_domain))
+            
         constraints = self._AC3(domains, arcs)
         
-        write_to_debug_file(f"constraints:\n{constraints}")
+        for event in constraints:
+            str_event = str(event)
+            constraints_json[str_event] = {}
+            for n_event in constraints[event]:
+                str_n_event = str(n_event)
+                constraints_json[str_event][str_n_event] = {}
+                for d1o in constraints[event][n_event]:
+                    str_d1o = str(d1o)
+                    constraints_json[str_event][str_n_event][str_d1o] = []
+                    for d2o in constraints[event][n_event][d1o]:
+                        str_d2o = str(d2o)
+                        constraints_json[str_event][str_n_event][str_d1o].append(str_d2o)
         
-        return
+        print(constraints)
+        debug_json = {"domains": domains_json, "arcs": arcs_json, "constraints": constraints_json} 
+        
+        write_to_debug_file(debug_json)
+        
 
 class VEGA:
     def __init__(self):

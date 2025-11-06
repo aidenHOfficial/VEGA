@@ -1,0 +1,59 @@
+{
+    "domains": {
+        "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": [
+            "(2025-10-02 01:00:00, 2025-10-02 03:00:00)",
+            "(2025-10-02 04:00:00, 2025-10-02 05:00:00)",
+            "(2025-10-02 06:00:00, 2025-10-02 07:00:00)"
+        ],
+        "Event(Task: 2, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": [
+            "(2025-10-02 01:00:00, 2025-10-02 03:00:00)"
+        ],
+        "Event(Task: 3, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": [
+            "(2025-10-02 04:00:00, 2025-10-02 07:00:00)"
+        ]
+    },
+    "arcs": {
+        "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 2, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+                "(2025-10-02 01:00:00, 2025-10-02 03:00:00)": [
+                    "(2025-10-02 01:00:00, 2025-10-02 03:00:00)"
+                ]
+            },
+            "Event(Task: 3, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+                "(2025-10-02 04:00:00, 2025-10-02 05:00:00)": [
+                    "(2025-10-02 04:00:00, 2025-10-02 07:00:00)"
+                ],
+                "(2025-10-02 06:00:00, 2025-10-02 07:00:00)": [
+                    "(2025-10-02 04:00:00, 2025-10-02 07:00:00)"
+                ]
+            }
+        },
+        "Event(Task: 2, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+                "(2025-10-02 01:00:00, 2025-10-02 03:00:00)": [
+                    "(2025-10-02 01:00:00, 2025-10-02 03:00:00)"
+                ]
+            }
+        },
+        "Event(Task: 3, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+                "(2025-10-02 04:00:00, 2025-10-02 07:00:00)": [
+                    "(2025-10-02 04:00:00, 2025-10-02 05:00:00)",
+                    "(2025-10-02 06:00:00, 2025-10-02 07:00:00)"
+                ]
+            }
+        }
+    },
+    "constraints": {
+        "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 2, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {},
+            "Event(Task: 3, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {}
+        },
+        "Event(Task: 2, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {}
+        },
+        "Event(Task: 3, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {
+            "Event(Task: 1, goal_value: 20, routine_value: 15, personal_value: 10, relational_value: 25)": {}
+        }
+    }
+}

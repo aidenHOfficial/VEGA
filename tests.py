@@ -1051,10 +1051,10 @@ class TimeTreeTests(unittest.TestCase):
 
         events = [task_event, task_event2, task_event3]
 
-        self.assertEqual(3, len(tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))))
         search_events = tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))
-        for event in events:
-            self.assertIn(event, search_events)
+        self.assertEqual(3, len(search_events))
+        for event in search_events:
+            assert(event['event'] in events) 
 
     def test_search(self):
         tree = TimeTree()

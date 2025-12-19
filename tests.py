@@ -1080,50 +1080,26 @@ class TimeTreeTests(unittest.TestCase):
         pass
 
 class CalendarTests(unittest.TestCase):
+    # def test_time_interval_constraint(self):
+        # test_csp = CSP()
+
+        # temp_interval1 = TimeInterval(datetime(2025, 10, 1, 6, 30), datetime(2025, 10, 1, 7))
+        # temp_interval2 = TimeInterval(datetime(2025, 10, 1, 7, 30), datetime(2025, 10, 1, 8, 30))
+        # self.assertFalse(test_csp._time_interval_constraint(temp_interval1, temp_interval2, temp_interval1.get_duration(), temp_interval2.get_duration()))
+
     def test(self):
         cal = Calendar()
 
-        temp_task = TemporalTask("1", "FIRST", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 3), None, None, [TimeInterval(datetime(2025, 10, 2, 4), datetime(2025, 10, 2, 5)), TimeInterval(datetime(2025, 10, 2, 6), datetime(2025, 10, 2, 7))])
+        temp_task = TemporalTask("B", "B", datetime(2025, 10, 2, 6, 30), datetime(2025, 10, 2, 7), None, None, [TimeInterval(datetime(2025, 10, 2, 8), datetime(2025, 10, 2, 8, 30))])
         cal.schedule_event(temp_task, 20, 15, 10, 25)
 
-        temp_task2 = TemporalTask("2", "SECOND", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 3))
+        temp_task2 = TemporalTask("A", "A", datetime(2025, 10, 2, 7), datetime(2025, 10, 2, 7, 30), None, None, [TimeInterval(datetime(2025, 10, 2, 6), datetime(2025, 10, 2, 7)), TimeInterval(datetime(2025, 10, 2, 7, 30), datetime(2025, 10, 2, 8))])
         cal.schedule_event(temp_task2, 20, 15, 10, 25)
 
-        temp_task3 = TemporalTask("3", "THIRD", datetime(2025, 10, 2, 4), datetime(2025, 10, 2, 7))
+        temp_task3 = TemporalTask("C", "C", datetime(2025, 10, 2, 7, 30), datetime(2025, 10, 2, 8, 30))
         cal.schedule_event(temp_task3, 20, 15, 10, 25)
 
         cal.generate_schedule(datetime(2025, 10, 2))
-        
-    def test_time_interval_constraint(self):
-        cal = Calendar()
-        
-        duration = timedelta(0, 0, 0, 0, 0, 2)
-        
-        base_interval = TimeInterval(datetime(2025, 10, 18, 4), datetime(2025, 10, 18, 7))
-        
-        test_interval1 = TimeInterval(datetime(2025, 10, 18, 3), datetime(2025, 10, 18, 5))
-        test_interval2 = TimeInterval(datetime(2025, 10, 18, 6), datetime(2025, 10, 18, 8))
-        
-        test_interval3 = TimeInterval(datetime(2025, 10, 18, 4), datetime(2025, 10, 18, 6))
-        test_interval4 = TimeInterval(datetime(2025, 10, 18, 5), datetime(2025, 10, 18, 7))
-        
-        test_interval5 = TimeInterval(datetime(2025, 10, 18, 1), datetime(2025, 10, 18, 3))
-        test_interval6 = TimeInterval(datetime(2025, 10, 18, 8), datetime(2025, 10, 18, 10))
-        
-        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval1, duration, duration))
-        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval2, duration, duration))
-        self.assertFalse(cal._time_interval_constraint(base_interval, test_interval3, duration, duration))
-        self.assertFalse(cal._time_interval_constraint(base_interval, test_interval4, duration, duration))
-        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval5, duration, duration))
-        self.assertTrue(cal._time_interval_constraint(base_interval, test_interval6, duration, duration))
-        
-        
-        
-        
-
-
-
-
 
     # def test_add_event(self):
     #     calendar = Calendar()

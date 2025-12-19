@@ -161,9 +161,7 @@ class TemporalTask(Task):
         for interval in self._schedule_intervals:
             if (
                 (self._startline and interval.start_date < self._startline) or 
-                (self._deadline and interval.end_date > self._deadline) or 
-                (interval.start_date < self._start_date) or
-                (interval.end_date < self._end_date) 
+                (self._deadline and interval.end_date > self._deadline)
             ):
                 raise ValueError("All reschedule periods must be within startline and deadline.")
 
@@ -210,9 +208,7 @@ class TemporalTask(Task):
     def add_schedule_interval(self, interval: TimeInterval):
         if (
             (self._startline and interval.start_date < self._startline) or 
-            (self._deadline and interval.end_date > self._deadline) or 
-            (interval.start_date < self._start_date) or
-            (interval.end_date < self._end_date) 
+            (self._deadline and interval.end_date > self._deadline) 
         ):            
             raise ValueError("Added period must be within the interval of [start_date, end_date] and [start_line, end_line]")
         
@@ -912,25 +908,18 @@ class TimeTree:
         overlaps = {}
     
         for time, pos, typ, event in points:
-            if (event not in overlaps):
-                overlaps[event] = {}
             formatted_event = (event, time)
             if typ == 1:
                 for active_event in active:
                     
-                    if (active_event[0] not in overlaps):
-                        overlaps[active_event[0]] = {}
-                    if (event not in overlaps[active_event[0]]):
-                        overlaps[active_event[0]][event] = {}
-                    if (active_event[0] not in overlaps[event]):
-                        overlaps[event][active_event[0]] = {}
-                    if (time not in overlaps[event][active_event[0]]):
-                        overlaps[event][active_event[0]][time] = set()
-                    if (active_event[1] not in overlaps[active_event[0]][event]):
-                        overlaps[active_event[0]][event][active_event[1]] = set()
+                    if (event, active_event[0]) not in overlaps:
+                        overlaps[(event, active_event[0])] = set()
+                    if (active_event[0], event) not in overlaps:
+                        overlaps[(active_event[0], event)] = set()
                         
-                    overlaps[event][active_event[0]][time].add(active_event[1])
-                    overlaps[active_event[0]][event][active_event[1]].add(time)
+                    overlaps[(event, active_event[0])].add((time, active_event[1]))
+                    overlaps[(active_event[0], event)].add((active_event[1], time))
+
                 active.add(formatted_event)
             else:
                 active.remove(formatted_event)
@@ -943,10 +932,19 @@ class TimeTree:
     def print_tree(self):
         self._print_tree_recursive(self._root, "", True)
 
+@dataclass
 class CSP:
-    def __init__(self):
-        self.domains: Dict[Event, List[TimeInterval]] = {}
-        self.arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = set()
+    domains: Dict[Event, List[TimeInterval]] = {}
+    arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = {}
+    constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Dict[TimeInterval]]]] = {}
+    assignments: Dict[Event, List[TimeInterval]] = {}
+    undo_stack: List = []
+
+    def __init__(self, domains = None, arcs = None):
+        if (domains is not None):
+            self.domains: Dict[Event, List[TimeInterval]] = domains
+        if (arcs is not None):
+            self.arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = arcs
 
     def add_event(self, event: Event, intervals: List[TimeInterval]):
         self.domains[event] = intervals
@@ -976,10 +974,8 @@ class CSP:
             return True
     
     def _AC3(self):
-        queue = []
         constraints = {}
-        
-        queue = self.arcs.items().copy()
+        queue = list(self.arcs.keys()).copy()
         
         while (len(queue) != 0):
             
@@ -994,12 +990,12 @@ class CSP:
                 constraints[node] = {}
             if neighbor not in constraints[node]:
                 constraints[node][neighbor] = {}
-                
+
             if neighbor not in constraints:
                 constraints[neighbor] = {}
             if node not in constraints[neighbor]:
                 constraints[neighbor][node] = {}
-            
+
             for d1o in self.domains[node].copy():
                 for d2o in self.domains[neighbor].copy():
                     
@@ -1016,43 +1012,83 @@ class CSP:
                 if d1o not in constraints[node][neighbor]:
                     self._revise(node, neighbor, d1o, constraints, queue)
         
+        self.constraints = constraints
         return constraints
-                    
+
     def _revise(self, node, neighbor, bad_dom, constraints, queue):
-        # Removal case
-        # 1. Remove option from domain
-        # 2. Remove option from other constraint pairs
-        # 3. Add other arcs which start with node to queue if not already in
         self.domains[node].remove(bad_dom)
-                    
+        
         for check_neighbor in constraints[node]:
             if (check_neighbor == neighbor):
                 continue
-            # Can add arcs to queue and remove invalid constraints from those neighboring arcs at the same time
-            # You can use the neighbor subset of those in constraints because if it isn't already in constraints, then it's
-            # still in the queue
-                        
+            
             if ((check_neighbor, node) not in queue):
                 queue.append((check_neighbor, node))
             
-            # revise_neighbors = []
             if bad_dom in constraints[node][check_neighbor]:
                 for constraint_to_fix in constraints[node][check_neighbor][bad_dom]:
                     constraints[check_neighbor][node][constraint_to_fix].remove(bad_dom)
                     
-                    # Check if this removal eliminates the current constraint domain option of neighbor            
                     if (len(constraints[check_neighbor][node][constraint_to_fix]) == 0):
                         constraints[check_neighbor][node].pop(constraint_to_fix)
                         self._revise(check_neighbor, node, constraint_to_fix, constraints, queue)
-                        # revise_neighbors.append(check_neighbor)
-                        
+                
                 constraints[node][check_neighbor].pop(bad_dom)
-                            
-            # for revise_neighbor in revise_neighbors:
-                # self._revise(revise_neighbor, node, constraint_to_fix, domains, constraints, queue)
-                    
-                        
+        
         return constraints
+    
+    def solve(self):
+        if self.constraints is None:
+            self._AC3()
+        
+        return self._backtrack()
+    
+    def _get_unassigned(self):
+        for event in self.domains:
+            if event not in self.assignments:
+                return event
+        return None
+    
+    def _forward_check(self, event):
+        return "TODO"
+    
+    def _split_interval(interval1: TimeInterval, interval2: TimeInterval, dur1: timedelta, dur2: timedelta):
+
+        if (interval1 + interval2) > 2:
+            # Condition where the split in intervals is impossible1
+            return None
+
+    def _assign(self, event: Event, interval: TimeInterval):
+        # Check if this interval overlaps with other assigned events
+        # if so, split the intervals accordingly and push the changes to the undo stack
+        # else just assign the interval to the event and push the changes to the undo stack 
+
+        if event in self.assignments:
+            return None
+        
+        for neighbor in self.constraints[event].keys():
+            if (neighbor in self.assignments):
+                intervals = self._split_interval(interval, self.constraints[event][neighbor][interval], event.get_duration(), neighbor.get_duration())
+
+                if intervals == None:
+                    # Assignment failed
+                    pass
+    
+    def _backtrack(self):
+        event = self._get_unassigned()
+        if (not event):
+            return self.assignments
+        
+        for interval in self.domains[event]:
+            checkpoint = len(self.undo_stack)
+
+            self._assign(event, interval)
+            if (self.forward_check(event)):
+                result = self._backtrack()
+                if result is not None:
+                    return result
+                
+            self.undo(checkpoint)
 
 @dataclass
 class Calendar:
@@ -1089,38 +1125,44 @@ class Calendar:
         return self._time_tree.overlap_search(TimeInterval)
     
     def generate_schedule(self, date: datetime):
-        satis_prob = CSP()
         domains = defaultdict(set)
 
         date_start = datetime(date.year, date.month, date.day)
         date_end = datetime(date.year, date.month, date.day, 23, 59, 59)
         date_time_interval = TimeInterval(date_start, date_end)
-                    
-        arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
         
-        satis_prob.add_event
+        arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
         
         domains_json = {}
         arcs_json = {}
         constraints_json = {}
         
-        for event in arcs:
-            str_event = str(event)
-            domains_json[str_event] = [] 
-            arcs_json[str_event] = {}
-            for n_event in arcs[event]:
-                str_n_event = str(n_event)
-                arcs_json[str_event][str_n_event] = {}
-                for domain in arcs[event][n_event]:
-                    str_domain = str(domain)
-                    arcs_json[str_event][str_n_event][str_domain] = []
-                    domains_json[str_event].append(str_domain)
-                    domains[event].add(domain)
-                    for n_domain in arcs[event][n_event][domain]:
-                        arcs_json[str_event][str_n_event][str_domain].append(str(n_domain))
-            
-        constraints = self._AC3(domains, arcs)
+        # Need to update test. Currently temp_task3 have no valid domain options, causing the colapse of contraints data structure.
         
+        for event in arcs:
+            str_event = str(event[0])
+            str_n_event = str(event[1])
+            if str_event not in domains_json:
+                domains_json[str_event] = []
+            if str_event not in arcs_json:
+                arcs_json[str_event] = {}
+            if str_n_event not in arcs_json[str_event]:
+                arcs_json[str_event][str_n_event] = {}
+            for domain in arcs[event]:
+                str_domain = str(domain[0])
+                str_n_domain = str(domain[1])
+                if str_domain not in arcs_json[str_event][str_n_event]:
+                    arcs_json[str_event][str_n_event][str_domain] = []
+                if str_n_domain not in arcs_json[str_event][str_n_event][str_domain]:
+                    arcs_json[str_event][str_n_event][str_domain].append(str_n_domain)
+                if str_domain not in domains_json[str_event]:
+                    domains_json[str_event].append(str_domain)
+                domains[event[0]].add(domain[0])
+                domains[event[1]].add(domain[1])
+
+        event_csp = CSP(domains, arcs)
+        constraints = event_csp._AC3()
+
         for event in constraints:
             str_event = str(event)
             constraints_json[str_event] = {}
@@ -1133,12 +1175,10 @@ class Calendar:
                     for d2o in constraints[event][n_event][d1o]:
                         str_d2o = str(d2o)
                         constraints_json[str_event][str_n_event][str_d1o].append(str_d2o)
-        
-        print(constraints)
+         
         debug_json = {"domains": domains_json, "arcs": arcs_json, "constraints": constraints_json} 
-        
+        print(debug_json)
         write_to_debug_file(debug_json)
-        
 
 class VEGA:
     def __init__(self):

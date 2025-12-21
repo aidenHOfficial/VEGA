@@ -1,6 +1,15 @@
 import unittest
 from models import *
 from datetime import datetime, timedelta
+from models.time_interval import TimeInterval
+from models.task import Task
+from models.temporal_task import TemporalTask
+from models.goal import Goal
+from models.routine import Routine
+from models.event import Event
+from models.time_tree_node import TimeTreeNode
+from models.time_tree import TimeTree
+from models.calendar import Calendar
 
 print("\n\n")
 
@@ -771,11 +780,11 @@ class EventTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             task_event.get_time_slot()
 
-class NodeTests(unittest.TestCase):
+class TimeTreeNodeTests(unittest.TestCase):
     def test_add_event(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
         temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
@@ -792,7 +801,7 @@ class NodeTests(unittest.TestCase):
     def test_remove_event(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 1), datetime(2025, 10, 2))
         temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
@@ -821,7 +830,7 @@ class NodeTests(unittest.TestCase):
     def test_remove_event_invalid(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         with self.assertRaises(IndexError):
             node.remove_event(-1)
@@ -854,7 +863,7 @@ class NodeTests(unittest.TestCase):
     def test_get_num_events(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         self.assertEqual(1, node.get_num_events())
         
@@ -872,7 +881,7 @@ class NodeTests(unittest.TestCase):
     def test_get_event(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         self.assertEqual(task_event, node.get_event(0))
         self.assertEqual(task_event, node.get_event("Test"))
@@ -880,7 +889,7 @@ class NodeTests(unittest.TestCase):
     def test_get_event_invalid(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         with self.assertRaises(IndexError):
             node.get_event(-1)
@@ -911,7 +920,7 @@ class NodeTests(unittest.TestCase):
     def test_get_events(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         self.assertEqual([task_event], node.get_events())
         
@@ -933,7 +942,7 @@ class NodeTests(unittest.TestCase):
     def test_get_key(self):
         temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
         task_event = Event(temp_task, 20, 15, 10, 25)
-        node = Node(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+        node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
         self.assertEqual(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)), node.get_key())
 

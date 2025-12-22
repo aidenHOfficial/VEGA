@@ -6,17 +6,22 @@ from models.event import Event
 
 @dataclass
 class CSP:
-    domains: Dict[Event, List[TimeInterval]] = field(default_factory=dict)
-    arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = field(default_factory=dict)
-    constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Set[TimeInterval]]]] = field(default_factory=dict)
-    assignments: Dict[Event, List[TimeInterval]] = field(default_factory=dict)
-    undo_stack: List = field(default_factory=list)
+    domains: Dict[Event, List[TimeInterval]] 
+    arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] 
+    constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Set[TimeInterval]]]] 
+    assignments: Dict[Event, List[TimeInterval]] 
+    undo_stack: List 
 
     def __init__(self, domains = None, arcs = None):
+        self.domains = {}
+        self.arcs = {}
+        self.constraints = {}
+        self.assignments = {}
+        self.undo_stack = []
         if (domains is not None):
-            self.domains: Dict[Event, List[TimeInterval]] = domains
+            self.domains = domains
         if (arcs is not None):
-            self.arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] = arcs
+            self.arcs = arcs
 
     def add_event(self, event: Event, intervals: List[TimeInterval]):
         self.domains[event] = intervals
@@ -112,19 +117,15 @@ class CSP:
     def solve(self):
         if self.constraints is None:
             self._AC3()
-        
         return self._backtrack()
     
     def _get_unassigned(self):
-        for event in self.domains:
-            if event not in self.assignments:
-                return event
-        return None
+        return [event for event in self.domains if event not in self.assignments]
     
-    def _forward_check(self, event):
-        return "TODO"
+    # def _forward_check(self, event):
+    #     return "TODO"
     
-    def mergeSplit(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
+    def _mergeSplit(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
         intr1_valid = intr1.get_duration() >= dur1
         intr2_valid = intr2.get_duration() >= dur2
         res = None
@@ -139,44 +140,58 @@ class CSP:
         return res
     
     def _split_interval(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
-        spl1 = [intr1.start_date, min(intr2.end_date - dur2, intr1.end_date)]
-        spl2 = [max(intr1.start_date + dur1, intr2.start_date), intr2.end_date]
-        spl3 = [intr2.start_date, min(intr1.end_date - dur1, intr2.end_date)]
-        spl4 = [max(intr2.start_date + dur2, intr1.start_date), intr1.end_date]
+        spl1 = TimeInterval(intr1.start_date, min(intr2.end_date - dur2, intr1.end_date))
+        spl2 = TimeInterval(max(intr1.start_date + dur1, intr2.start_date), intr2.end_date)
+        spl3 = TimeInterval(intr2.start_date, min(intr1.end_date - dur1, intr2.end_date))
+        spl4 = TimeInterval(max(intr2.start_date + dur2, intr1.start_date), intr1.end_date)
         
-        newinter1 = self.mergeSplit(spl1, spl3, dur1, dur2)
-        newinter2 = self.mergeSplit(spl2, spl4, dur1, dur2)
-
+        newinter1 = self._mergeSplit(spl1, spl3, dur1, dur2)
+        newinter2 = self._mergeSplit(spl2, spl4, dur1, dur2)
+        
+        # Ensure the durations for the merged intervals are large enough
+        if (not (max(newinter1.end_date, newinter2.end_date) - min(newinter1.start_date, newinter2.start_date) >= dur1 + dur2)):
+            return None, None
+        
         return newinter1, newinter2
 
     def _assign(self, event: Event, interval: TimeInterval):
-        # Check if this interval overlaps with other assigned events
-        # if so, split the intervals accordingly and push the changes to the undo stack
-        # else just assign the interval to the event and push the changes to the undo stack 
+        self.assignments[event] = interval
 
-        if event in self.assignments:
-            return None
-        
         for neighbor in self.constraints[event].keys():
-            if (neighbor in self.assignments):
-                intr1, intr2 = self._split_interval(interval, self.constraints[event][neighbor][interval], event.get_duration(), neighbor.get_duration())
 
-                if (intr1 is None or intr2 is None):
-                    return None # TODO
-                    
+            if (neighbor in self.assignments and interval.is_overlapping(self.assignments[neighbor])):
+                neighbor_interval = self.assignments[neighbor]
+                intr1, intr2 = self._split_interval(interval, neighbor_interval, event.get_duration(), neighbor.get_duration())
+
+                if (not intr1 or not intr2):
+                    return False
+
+                if (neighbor_interval != intr2):
+                    self.undo_stack.append((neighbor, neighbor_interval))
+                    neighbor_interval = intr2
+
+                if (self.assignments[event] != intr1):
+                    self.assignments[event] = intr1
+
+        self.undo_stack.append((event, None))
+        return True
+    
+    def _undo(self, checkpoint):
+        while (len(self.undo_stack) > checkpoint):
+            event, interval = self.undo_stack.pop()
+            if (interval is None):
+                del self.assignments[event]
+            else:
+                self.assignments[event] = interval
     
     def _backtrack(self):
-        event = self._get_unassigned()
-        if (not event):
-            return self.assignments
-        
-        for interval in self.domains[event]:
-            checkpoint = len(self.undo_stack)
-
-            self._assign(event, interval)
-            if (self.forward_check(event)):
-                result = self._backtrack()
-                if result is not None:
-                    return result
-                
-            self.undo(checkpoint)
+        unasigned_events = self._get_unassigned()
+        if (len(unasigned_events) == 0):
+            return True
+        for event in unasigned_events:
+            for sched_intrvl in self.domains[event]:
+                checkpoint = len(self.undo_stack)
+                if (self._assign(event, sched_intrvl) and self._backtrack()):
+                    return True
+                self._undo(checkpoint)
+        return False

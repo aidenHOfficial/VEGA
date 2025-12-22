@@ -1089,23 +1089,16 @@ class TimeTreeTests(unittest.TestCase):
         pass
 
 class CalendarTests(unittest.TestCase):
-    # def test_time_interval_constraint(self):
-        # test_csp = CSP()
-
-        # temp_interval1 = TimeInterval(datetime(2025, 10, 1, 6, 30), datetime(2025, 10, 1, 7))
-        # temp_interval2 = TimeInterval(datetime(2025, 10, 1, 7, 30), datetime(2025, 10, 1, 8, 30))
-        # self.assertFalse(test_csp._time_interval_constraint(temp_interval1, temp_interval2, temp_interval1.get_duration(), temp_interval2.get_duration()))
-
     def test(self):
         cal = Calendar()
 
-        temp_task = TemporalTask("B", "B", datetime(2025, 10, 2, 6, 30), datetime(2025, 10, 2, 7), None, None, [TimeInterval(datetime(2025, 10, 2, 8), datetime(2025, 10, 2, 8, 30))])
+        temp_task = TemporalTask("A", "A", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 2), None, None, [TimeInterval(datetime(2025, 10, 2, 4), datetime(2025, 10, 2, 5))])
         cal.schedule_event(temp_task, 20, 15, 10, 25)
 
-        temp_task2 = TemporalTask("A", "A", datetime(2025, 10, 2, 7), datetime(2025, 10, 2, 7, 30), None, None, [TimeInterval(datetime(2025, 10, 2, 6), datetime(2025, 10, 2, 7)), TimeInterval(datetime(2025, 10, 2, 7, 30), datetime(2025, 10, 2, 8))])
+        temp_task2 = TemporalTask("B", "B", datetime(2025, 10, 2, 3), datetime(2025, 10, 2, 5), None, None, [TimeInterval(datetime(2025, 10, 2, 5), datetime(2025, 10, 2, 6))])
         cal.schedule_event(temp_task2, 20, 15, 10, 25)
 
-        temp_task3 = TemporalTask("C", "C", datetime(2025, 10, 2, 7, 30), datetime(2025, 10, 2, 8, 30))
+        temp_task3 = TemporalTask("C", "C", datetime(2025, 10, 2, 5), datetime(2025, 10, 2, 8), None, None, [TimeInterval(datetime(2025, 10, 2, 3), datetime(2025, 10, 2, 5))])
         cal.schedule_event(temp_task3, 20, 15, 10, 25)
 
         cal.generate_schedule(datetime(2025, 10, 2))

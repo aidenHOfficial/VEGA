@@ -1,8 +1,9 @@
 from typing import List, Dict, Set, Tuple
 from datetime import timedelta
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from models.time_interval import TimeInterval
 from models.event import Event
+from enum import Enum
 
 @dataclass
 class CSP:
@@ -11,6 +12,9 @@ class CSP:
     constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Set[TimeInterval]]]] 
     assignments: Dict[Event, List[TimeInterval]] 
     undo_stack: List 
+    class UndoAction(Enum):
+        DOMAIN = 1
+        ASSIGNMENT = 2
 
     def __init__(self, domains = None, arcs = None):
         self.domains = {}
@@ -122,37 +126,61 @@ class CSP:
     def _get_unassigned(self):
         return [event for event in self.domains if event not in self.assignments]
     
-    # def _forward_check(self, event):
-    #     return "TODO"
-    
-    def _mergeSplit(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
-        intr1_valid = intr1.get_duration() >= dur1
-        intr2_valid = intr2.get_duration() >= dur2
-        res = None
-
-        if (intr1_valid and intr2_valid):
-            res = [min(intr1.start_date, intr2.start_date), max(intr1.end_date, intr2.end_date)]
-        elif (intr1_valid and not intr2_valid):
-            res = intr1
-        elif (not intr1_valid and intr2_valid):
-            res = intr2
-
-        return res
-    
     def _split_interval(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
-        spl1 = TimeInterval(intr1.start_date, min(intr2.end_date - dur2, intr1.end_date))
-        spl2 = TimeInterval(max(intr1.start_date + dur1, intr2.start_date), intr2.end_date)
-        spl3 = TimeInterval(intr2.start_date, min(intr1.end_date - dur1, intr2.end_date))
-        spl4 = TimeInterval(max(intr2.start_date + dur2, intr1.start_date), intr1.end_date)
-        
-        newinter1 = self._mergeSplit(spl1, spl3, dur1, dur2)
-        newinter2 = self._mergeSplit(spl2, spl4, dur1, dur2)
-        
-        # Ensure the durations for the merged intervals are large enough
-        if (not (max(newinter1.end_date, newinter2.end_date) - min(newinter1.start_date, newinter2.start_date) >= dur1 + dur2)):
-            return None, None
-        
-        return newinter1, newinter2
+        """ 
+        This function returns 2 tuples which are the result of splitting the given intr1, intr2 with matching dur1, dur2 event durations.
+        The tuples have 2 values which represent the TimeInterval result of splitting its interval (intr1 / intr2) or None if there is only 1
+        valid TimeInterval result for the split.
+
+
+        Args:
+            intr1 (TimeInterval): The first interval of time to be split
+            intr2 (TimeInterval): The second interval of time to be split 
+            dur1 (timedelta): The event duration for the first interval
+            dur2 (timedelta): The event duration for the second interval
+
+        Returns:
+            ((TimeInterval?, TimeInterval?), (TimeInterval?, TimeInterval?))
+        """
+        res1 = None, None
+        res2 = None, None
+
+        if (intr1.start_date < intr2.start_date):
+            a, b, d1 = intr1.start_date, intr1.end_date, dur1 
+            x, y, d2 = intr2.start_date, intr2.end_date, dur2
+        else:
+            a, b, d1 = intr2.start_date, intr2.end_date, dur2
+            x, y, d2 = intr1.start_date, intr1.end_date, dur1
+
+        red = TimeInterval(a, (y - d2))
+        yellow = TimeInterval((x + d2), b)
+        green = TimeInterval((a + d1), y)
+        blue = TimeInterval(x, (b - d1))
+
+        red_valid = red.get_duration() >= d1
+        yellow_valid = yellow.get_duration() >= d1
+        green_valid = green.get_duration() >= d2
+        blue_valid = blue.get_duration() >= d2
+
+        if (red_valid and yellow_valid):
+            if (red.is_overlapping(yellow)):
+                res1 = TimeInterval(min(red.start_date, yellow.start_date), max(red.end_date, yellow.end_date)), None
+            res1 = red, yellow
+        elif (red_valid):
+            res1 = red, None
+        elif (yellow_valid):
+            res1 = yellow, None
+
+        if (green_valid and blue_valid):
+            if (green.is_overlapping(blue)):
+                res2 = TimeInterval(min(green.start_date, blue.start_date), max(green.end_date, blue.end_date)), None
+            res2 = green, blue
+        elif (green_valid):
+            res2 = green, None
+        elif (blue_valid):
+            res2 = blue, None
+
+        return res1, res2
 
     def _assign(self, event: Event, interval: TimeInterval):
         self.assignments[event] = interval
@@ -163,12 +191,14 @@ class CSP:
                 neighbor_interval = self.assignments[neighbor]
                 intr1, intr2 = self._split_interval(interval, neighbor_interval, event.get_duration(), neighbor.get_duration())
 
-                if (not intr1 or not intr2):
+                if (intr1 == (None, None) or intr2 == (None, None)):
                     return False
 
                 if (neighbor_interval != intr2):
+                    if (intr2[1] is not None):
+                        self.undo_stack.append((neighbor, intr1[1]))
                     self.undo_stack.append((neighbor, neighbor_interval))
-                    neighbor_interval = intr2
+                    self.assignments[neighbor] = intr2
 
                 if (self.assignments[event] != intr1):
                     self.assignments[event] = intr1
@@ -178,18 +208,24 @@ class CSP:
     
     def _undo(self, checkpoint):
         while (len(self.undo_stack) > checkpoint):
-            event, interval = self.undo_stack.pop()
-            if (interval is None):
-                del self.assignments[event]
+            action, event, interval = self.undo_stack.pop()
+
+            if (action == 1): # DOMAIN update
+                undo_list = self.domains
             else:
-                self.assignments[event] = interval
+                undo_list = self.assignments
+
+            if (interval is None):
+                del undo_list[event]
+            else:
+                undo_list[event] = interval
     
     def _backtrack(self):
         unasigned_events = self._get_unassigned()
         if (len(unasigned_events) == 0):
             return True
         for event in unasigned_events:
-            for sched_intrvl in self.domains[event]:
+            for sched_intrvl in self.domains[event].copy(): # This might be wrong not sure
                 checkpoint = len(self.undo_stack)
                 if (self._assign(event, sched_intrvl) and self._backtrack()):
                     return True

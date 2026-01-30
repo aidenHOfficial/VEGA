@@ -1103,6 +1103,20 @@ class CalendarTests(unittest.TestCase):
 
         cal.generate_schedule(datetime(2025, 10, 2))
 
+        cal = Calendar()
+
+        temp_task = TemporalTask("A", "A", datetime(2025, 10, 2, 0), datetime(2025, 10, 2, 4), None, None, [TimeInterval(datetime(2025, 10, 2, 3), datetime(2025, 10, 2, 9))])
+        cal.schedule_event(temp_task, 20, 15, 10, 25)
+
+        temp_task2 = TemporalTask("B", "B", datetime(2025, 10, 2, 1), datetime(2025, 10, 2, 3), None, None, [TimeInterval(datetime(2025, 10, 2, 3), datetime(2025, 10, 2, 5))])
+        cal.schedule_event(temp_task2, 20, 15, 10, 25)
+
+        temp_task3 = TemporalTask("C", "C", datetime(2025, 10, 2, 7), datetime(2025, 10, 2, 9), None, None, [TimeInterval(datetime(2025, 10, 2, 9), datetime(2025, 10, 2, 10))])
+        cal.schedule_event(temp_task3, 20, 15, 10, 25)
+
+        cal.generate_schedule(datetime(2025, 10, 2))
+
+
     # def test_add_event(self):
     #     calendar = Calendar()
         

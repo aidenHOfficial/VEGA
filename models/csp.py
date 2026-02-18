@@ -222,12 +222,41 @@ class CSP:
     
     def _backtrack(self):
         unasigned_events = self._get_unassigned()
+
         if (len(unasigned_events) == 0):
             return True
+
         for event in unasigned_events:
             for sched_intrvl in self.domains[event].copy(): # This might be wrong not sure
                 checkpoint = len(self.undo_stack)
-                if (self._assign(event, sched_intrvl) and self._backtrack()):
+
+                self.assignments[event] = sched_intrvl
+
+                for neighbor in self.constraints[event].keys():
+        
+                    if (neighbor in self.assignments and sched_intrvl.is_overlapping(self.assignments[neighbor])):
+                        neighbor_interval = self.assignments[neighbor]
+                        intr1, intr2 = self._split_interval(sched_intrvl, neighbor_interval, event.get_duration(), neighbor.get_duration())
+        
+                        if (intr1 == (None, None) or intr2 == (None, None)): # The assignment fails; backtrack
+                            return False
+                        
+                        if 
+        
+                        # if (neighbor_interval != intr2):
+                        #     if (intr2[1] is not None):
+                        #         self.undo_stack.append((neighbor, intr1[1]))
+                        #     self.undo_stack.append((neighbor, neighbor_interval))
+                        #     self.assignments[neighbor] = intr2
+        
+                        # if (self.assignments[event] != intr1):
+                        #     self.assignments[event] = intr1
+        
+                self.undo_stack.append((event, None))
+
+                if (self._backtrack()):
                     return True
+
                 self._undo(checkpoint)
+
         return False

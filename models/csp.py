@@ -3,18 +3,15 @@ from datetime import timedelta
 from dataclasses import dataclass
 from models.time_interval import TimeInterval
 from models.event import Event
-from enum import Enum
 
 @dataclass
 class CSP:
-    domains: Dict[Event, List[TimeInterval]] 
-    arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]] 
-    constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Set[TimeInterval]]]] 
-    assignments: Dict[Event, List[TimeInterval]] 
-    undo_stack: List 
-    class UndoAction(Enum):
-        DOMAIN = 1
-        ASSIGNMENT = 2
+    domains: Dict[Event, List[TimeInterval]]
+    arcs: Dict[Tuple[Event, Event], Set[Tuple[TimeInterval, TimeInterval]]]
+    constraints: Dict[Event, Dict[Event, Dict[TimeInterval, Set[TimeInterval]]]]
+    assignments: Dict[Event, List[TimeInterval]]
+    undo_stack: List
+    solutions: List[Dict]
 
     def __init__(self, domains = None, arcs = None):
         self.domains = {}
@@ -22,6 +19,7 @@ class CSP:
         self.constraints = {}
         self.assignments = {}
         self.undo_stack = []
+        self.solutions = []
         if (domains is not None):
             self.domains = domains
         if (arcs is not None):
@@ -34,7 +32,7 @@ class CSP:
         if (e1, e2) not in self.arcs:
             self.arcs[(e1, e2)] = set()
         self.arcs[(e1, e2)].add((t1, t2))
-        
+
     def _time_interval_constraint(self, inter1: TimeInterval, inter2: TimeInterval, event_duration1: timedelta, event_duration2: timedelta):
         if (inter1.end_date < inter2.start_date or inter2.end_date < inter1.start_date):
             return True
@@ -53,7 +51,7 @@ class CSP:
         total_window = max(inter1.end_date, inter2.end_date) - min(inter1.start_date, inter2.start_date)
         if event_duration1 + event_duration2 <= total_window:
             return True
-    
+
     def _AC3(self):
         constraints = {}
         queue = list(self.arcs.keys()).copy()
@@ -117,21 +115,38 @@ class CSP:
                 constraints[node][check_neighbor].pop(bad_dom)
         
         return constraints
-    
-    def solve(self):
-        if self.constraints is None:
-            self._AC3()
-        return self._backtrack()
-    
-    def _get_unassigned(self):
-        return [event for event in self.domains if event not in self.assignments]
-    
-    def _split_interval(self, intr1: TimeInterval, intr2: TimeInterval, dur1: timedelta, dur2: timedelta):
-        """ 
-        This function returns 2 tuples which are the result of splitting the given intr1, intr2 with matching dur1, dur2 event durations.
-        The tuples have 2 values which represent the TimeInterval result of splitting its interval (intr1 / intr2) or None if there is only 1
-        valid TimeInterval result for the split.
 
+    def solve(self):
+        """Public function to solve the AC3 problem given the constraints
+
+        Returns:
+            List[Dict]: List of solution configurations
+        """
+        if not bool(self.constraints):
+            self._AC3()
+        self._backtrack()
+        return self.solutions
+
+    def _get_unassigned(self):
+        """Returns the events which do not have an assignment in self.assignments
+
+        Returns:
+            List[Event]: The list of events without assignment
+        """
+        return [event for event in self.domains if event not in self.assignments]
+
+    def _split_interval(
+            self,
+            intr1: TimeInterval,
+            intr2: TimeInterval,
+            dur1: timedelta,
+            dur2: timedelta
+        ):
+        """ 
+        This function returns 2 tuples which are the result of splitting the given intr1, intr2 
+        with matching dur1, dur2 event durations. The tuples have 2 values which represent the 
+        TimeInterval result of splitting its interval (intr1 / intr2) or None if there is only 1
+        valid TimeInterval result for the split.
 
         Args:
             intr1 (TimeInterval): The first interval of time to be split
@@ -145,17 +160,20 @@ class CSP:
         res1 = None, None
         res2 = None, None
 
-        if (intr1.start_date < intr2.start_date):
-            a, b, d1 = intr1.start_date, intr1.end_date, dur1 
-            x, y, d2 = intr2.start_date, intr2.end_date, dur2
-        else:
-            a, b, d1 = intr2.start_date, intr2.end_date, dur2
-            x, y, d2 = intr1.start_date, intr1.end_date, dur1
+        # if (intr1.start_date < intr2.start_date or (intr1.start_date == intr2.start_date and intr1.end_date < intr2.end_date)):
+        #     a, b, d1 = intr1.start_date, intr1.end_date, dur1
+        #     x, y, d2 = intr2.start_date, intr2.end_date, dur2
+        # else:
+        #     a, b, d1 = intr2.start_date, intr2.end_date, dur2
+        #     x, y, d2 = intr1.start_date, intr1.end_date, dur1
 
-        red = TimeInterval(a, (y - d2))
-        yellow = TimeInterval((x + d2), b)
-        green = TimeInterval((a + d1), y)
-        blue = TimeInterval(x, (b - d1))
+        a, b, d1 = intr1.start_date, intr1.end_date, dur1
+        x, y, d2 = intr2.start_date, intr2.end_date, dur2
+
+        red = TimeInterval(a, max((y - d2), a))
+        yellow = TimeInterval(min((x + d2), b), b)
+        green = TimeInterval(min((a + d1), y), y)
+        blue = TimeInterval(x, max((b - d1), x))
 
         red_valid = red.get_duration() >= d1
         yellow_valid = yellow.get_duration() >= d1
@@ -163,100 +181,111 @@ class CSP:
         blue_valid = blue.get_duration() >= d2
 
         if (red_valid and yellow_valid):
-            if (red.is_overlapping(yellow)):
-                res1 = TimeInterval(min(red.start_date, yellow.start_date), max(red.end_date, yellow.end_date)), None
             res1 = red, yellow
-        elif (red_valid):
+        elif red_valid:
             res1 = red, None
-        elif (yellow_valid):
+        elif yellow_valid:
             res1 = yellow, None
 
         if (green_valid and blue_valid):
-            if (green.is_overlapping(blue)):
-                res2 = TimeInterval(min(green.start_date, blue.start_date), max(green.end_date, blue.end_date)), None
             res2 = green, blue
-        elif (green_valid):
+        elif green_valid:
             res2 = green, None
-        elif (blue_valid):
+        elif blue_valid:
             res2 = blue, None
 
         return res1, res2
 
-    def _assign(self, event: Event, interval: TimeInterval):
-        self.assignments[event] = interval
-
-        for neighbor in self.constraints[event].keys():
-
-            if (neighbor in self.assignments and interval.is_overlapping(self.assignments[neighbor])):
-                neighbor_interval = self.assignments[neighbor]
-                intr1, intr2 = self._split_interval(interval, neighbor_interval, event.get_duration(), neighbor.get_duration())
-
-                if (intr1 == (None, None) or intr2 == (None, None)):
-                    return False
-
-                if (neighbor_interval != intr2):
-                    if (intr2[1] is not None):
-                        self.undo_stack.append((neighbor, intr1[1]))
-                    self.undo_stack.append((neighbor, neighbor_interval))
-                    self.assignments[neighbor] = intr2
-
-                if (self.assignments[event] != intr1):
-                    self.assignments[event] = intr1
-
-        self.undo_stack.append((event, None))
-        return True
-    
     def _undo(self, checkpoint):
-        while (len(self.undo_stack) > checkpoint):
-            action, event, interval = self.undo_stack.pop()
+        while len(self.undo_stack) > checkpoint:
+            event, interval = self.undo_stack.pop()
 
-            if (action == 1): # DOMAIN update
-                undo_list = self.domains
+            if interval is None:
+                del self.assignments[event]
             else:
-                undo_list = self.assignments
+                self.assignments[event] = interval
 
-            if (interval is None):
-                del undo_list[event]
-            else:
-                undo_list[event] = interval
-    
+    def _assign_split(self, event1, event2, val1, val2, checkpoint):
+        self._assign(event1, val1)
+        self._assign(event2, val2)
+        self._backtrack()
+        self._undo(checkpoint)
+
+    def _assign(self, event, value):
+        if value != self.assignments.get(event):
+            # puts None using the get() function
+            self.undo_stack.append((event, self.assignments.get(event)))
+            self.assignments[event] = value
+
     def _backtrack(self):
-        unasigned_events = self._get_unassigned()
+        unassigned = self._get_unassigned()
 
-        if (len(unasigned_events) == 0):
-            return True
+        if len(unassigned) == 0:
+            self.solutions.append(dict(self.assignments))
+            return
 
-        for event in unasigned_events:
-            for sched_intrvl in self.domains[event].copy(): # This might be wrong not sure
-                checkpoint = len(self.undo_stack)
+        event = unassigned[0]
 
-                self.assignments[event] = sched_intrvl
+        for domain_value in self.domains[event]:
+            checkpoint = len(self.undo_stack)
+            self._assign(event, domain_value)
 
-                for neighbor in self.constraints[event].keys():
-        
-                    if (neighbor in self.assignments and sched_intrvl.is_overlapping(self.assignments[neighbor])):
-                        neighbor_interval = self.assignments[neighbor]
-                        intr1, intr2 = self._split_interval(sched_intrvl, neighbor_interval, event.get_duration(), neighbor.get_duration())
-        
-                        if (intr1 == (None, None) or intr2 == (None, None)): # The assignment fails; backtrack
-                            return False
-                        
-                        if 
-        
-                        # if (neighbor_interval != intr2):
-                        #     if (intr2[1] is not None):
-                        #         self.undo_stack.append((neighbor, intr1[1]))
-                        #     self.undo_stack.append((neighbor, neighbor_interval))
-                        #     self.assignments[neighbor] = intr2
-        
-                        # if (self.assignments[event] != intr1):
-                        #     self.assignments[event] = intr1
-        
-                self.undo_stack.append((event, None))
+            conflict = False
+            for neighbor, _ in self.constraints[event].items():
+                if neighbor not in self.assignments:
+                    continue
+                neighbor_val = self.assignments[neighbor]
+                if not domain_value.is_overlapping(neighbor_val):
+                    continue
 
-                if (self._backtrack()):
-                    return True
+                conflict = True
+                intr1, intr2 = self._split_interval(
+                    domain_value, neighbor_val,
+                    event.get_duration(), neighbor.get_duration()
+                )
 
-                self._undo(checkpoint)
+                if intr1 == (None, None) or intr2 == (None, None):
+                    break
 
-        return False
+                for v1 in filter(None, intr1):
+                    for v2 in filter(None, intr2):
+                        split_checkpoint = len(self.undo_stack)
+                        self._assign(event, v1)
+                        self._assign(neighbor, v2)
+                        self._backtrack()
+                        self._undo(split_checkpoint)
+                break
+
+            if not conflict:
+                self._backtrack()
+
+            self._undo(checkpoint)
+
+    # def _backtrack(self):
+    #     unasigned = self._get_unassigned()
+
+    #     if len(unasigned) == 0:
+    #         self.solutions.append(self.assignments)
+
+    #     for event in unasigned:
+    #         for domain_value in self.domains[event]:
+    #             self._assign(event, domain_value)
+    #             for neighbor in self.constraints[event].keys():
+    #                 if (neighbor in self.assignments and domain_value.is_overlapping(self.assignments[neighbor])):
+    #                     neighbor_assignment = self.assignments[neighbor]
+    #                     intr1, intr2 = self._split_interval(domain_value, neighbor_assignment, event.get_duration(), neighbor.get_duration())
+    #                     if (intr1 == (None, None) or intr2 == (None, None)):
+    #                         return
+    #                     checkpoint = len(self.undo_stack)
+    #                     self._assign_split(event, neighbor, intr1[0], intr2[0], checkpoint)
+    #                     if (intr1[1] is not None):
+    #                         if (intr2[1] is not None):
+    #                             self._assign_split(event, neighbor, intr1[1], intr2[1], checkpoint)
+    #                         self._assign_split(event, neighbor, intr1[1], intr2[0], checkpoint)
+    #                     if (intr2[1] is not None):
+    #                         self._assign_split(event, neighbor, intr1[0], intr2[1], checkpoint)
+
+    #     unasigned = self._get_unassigned()
+
+    #     if len(unasigned) == 0:
+    #         self.solutions.append(self.assignments)

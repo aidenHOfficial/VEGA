@@ -4,6 +4,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from models.event import Event
 from models.time_interval import TimeInterval
+import json
 
 @dataclass
 class TimeTreeNode:
@@ -23,6 +24,17 @@ class TimeTreeNode:
         self.right = None
         self.height = 1
         self.key = key
+
+    def to_dict(self):
+        return {
+            "key": self.key.to_dict(),
+            "min": self.min.isoformat(),
+            "max": self.max.isoformat(),
+            "height": self.height,
+            "events": [event.to_dict() for event in self.events],
+            "left": self.left.to_dict() if self.left else None,
+            "right": self.right.to_dict() if self.right else None,
+        }
     
     def add_event(self, event: Event):
         if (event.get_time_slot() != self.key):

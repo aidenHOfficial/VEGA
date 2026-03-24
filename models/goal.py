@@ -53,7 +53,13 @@ class Goal(TemporalTask):
             raise ValueError(
                 "Goal can not have a start_date, end_date, startline or deadline before or past this goal's start / end"
             )
-    
+
+    def to_dict(self):
+        return {
+            "_completed_steps": self._completed_steps,
+            "_subgoals": [subgoal.to_dict() for subgoal in self._subgoals],
+        }
+
     def get_completion_status(self):
         completed = self._completed
         for subgoal in self._subgoals.values():
@@ -78,7 +84,7 @@ class Goal(TemporalTask):
                 return self._subgoals[key]
             raise ValueError(f"Goal with title: {key} not found")
         raise TypeError("Key must be an int or str")
-    
+
     def get_subgoals(self):
         return list(self._subgoals.values())
 
@@ -89,10 +95,7 @@ class Goal(TemporalTask):
     
     def add_subgoal(self, goal: Task):
         self._check_time_period(goal)
-
         self._subgoals[goal._title] = goal
-        
-        # self._check_completion()
 
     def remove_subgoal(self, key):
         if isinstance(key, int):

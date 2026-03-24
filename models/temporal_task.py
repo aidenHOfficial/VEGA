@@ -66,6 +66,18 @@ class TemporalTask(Task):
     def __hash__(self):
         return hash((self._title, self._description, self._completed, self._start_date, self._end_date))
     
+    def to_dict(self):
+        return {
+            "_title": self._title,
+            "_description": self._description,
+            "_start_date": self._start_date,
+            "_end_date": self._end_date,
+            "_startline": self._startline,
+            "_deadline": self._deadline,
+            "_completed": self._completed,
+            "_schedule_intervals": self._schedule_intervals
+        }
+
     def get_start_date(self):
         return self._start_date
     

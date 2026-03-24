@@ -17,7 +17,9 @@ class TimeInterval:
         if self.start_date > self.end_date:
             raise ValueError("start_date must be before end_date")
         
-    def __eq__(self, other: TimeInterval):
+    def __eq__(self, other):
+        if not isinstance(other, TimeInterval):
+            return NotImplemented
         return self.start_date == other.start_date and self.end_date == other.end_date
     
     def __lt__(self, other):
@@ -30,6 +32,12 @@ class TimeInterval:
     
     def __hash__(self):
         return hash(self.__str__())
+    
+    def to_dict(self):
+        return {
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat()
+        }
       
     def get_start_date(self):
         return self.start_date

@@ -32,6 +32,14 @@ class Task:
     
     def __hash__(self):
         return hash(self.__str__())
+    
+    def to_dict(self):
+        return {
+            "_title": self._title,
+            "_description": self._description,
+            "_completed": self._completed,
+            "_deadline": self._deadline
+        }
 
     def get_completion_status(self):
         return self._completed

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Dict, List
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from models.task import Task
@@ -8,6 +8,8 @@ from models.temporal_task import TemporalTask
 @dataclass
 class Routine(TemporalTask):
     _repeated_time_difference = None
+    _tasks = []
+    _time_duration_map = {}
 
     def __init__(self, title: str, description: str, start_date: datetime, end_date: Optional[datetime] = None, repeated_time_difference: timedelta = timedelta(1)):
         super().__init__(title, description, start_date, end_date)
@@ -34,6 +36,13 @@ class Routine(TemporalTask):
         if (not isinstance(complete_time, timedelta)):
             raise (ValueError("Complete time provided was not a timedelta object"))
         return complete_time > timedelta(seconds=5)
+
+    def to_dict(self):
+        return {
+           "_repeated_time_difference": self._repeated_time_difference,
+           "_time_duration_map": self._time_duration_map.items(),
+           "_tasks": [task.to_dict() for task in self._tasks]
+        }
 
     def get_tasks(self):
         return self._tasks

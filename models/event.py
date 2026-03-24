@@ -71,40 +71,53 @@ class Event:
         time_diffrerence = self._time_difference_to_now().total_seconds() / 3600
 
         # m * tanh((t/d)+s) + m
-        return m * ((math.e**((time_diffrerence / d) + shift) - math.e**(-((time_diffrerence / d) + shift))) / (math.e**((time_diffrerence / d) + shift) + math.e**(-((time_diffrerence / d) + shift)))) + m
+        # m * ((math.e**((time_diffrerence / d) + shift) - math.e**(-((time_diffrerence / d) + shift))) / (math.e**((time_diffrerence / d) + shift) + math.e**(-((time_diffrerence / d) + shift)))) + m
+        temp1 = (time_diffrerence / d) + shift
+        temp2 = (math.e ** temp1 - math.e ** (-temp1))
+        temp3 = (math.e ** temp1 + math.e ** (-temp1))
+        score = (m * (temp2 / temp3)) + m
+        return score
 
     def _get_scemantic_score(self):
         # Returns a score between 0 and 100
-
         return min((GW * self._goal_value) + (RW * self._routine_value) + (PW * self._personal_value) + (REW * self._relational_value), 100)
-    
+
     @property
     def schedule_intervals(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_schedule_intervals()
         return None
-    
+
     @property
     def start_date(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_start_date()
         return None
-        
+
     @property
     def end_date(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_end_date()
         return None
-    
+
     @property
     def startline(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_startline()
         return None
-        
+
     @property
     def deadline(self):
         return self._task.get_deadline()
+    
+    def to_dict(self):
+        return {
+            "_task": self._task.to_dict(),
+            "_goal_value": self._goal_value,
+            "_routine_value": self._routine_value,
+            "_personal_value": self._personal_value,
+            "_relational_value": self._relational_value
+        }
     
     def get_priority_score(self):
         return self._get_scemantic_score() * self._get_urgency_score()

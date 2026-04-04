@@ -42,3 +42,14 @@ def test_get_deadline_with_set_deadline():
 def test_get_deadline_with_no_deadline():
     task = Task("test", "this is a test task")
     assert task.get_deadline() == None
+
+def test_to_dict():
+    task = Task("test", "this is a test task", None)
+    expected = {
+        "_title": "test",
+        "_description": "this is a test task",
+        "_completed": False,
+        "_deadline": None
+    }
+
+    assert task.to_dict() == expected

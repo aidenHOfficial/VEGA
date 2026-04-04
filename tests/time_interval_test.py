@@ -27,3 +27,11 @@ def test_get_duration():
     dur = timedelta(1)
     interval = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
     assert interval.get_duration() == dur
+
+def test_to_dict():
+    interval = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
+    expected = {
+        "start_date": datetime(2004, 10, 1).isoformat(),
+        "end_date": datetime(2004, 10, 2).isoformat()
+    }
+    assert interval.to_dict() == expected

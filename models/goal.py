@@ -11,7 +11,12 @@ class Goal(TemporalTask):
     _completed_steps: int = 0
     
     def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None):
-        super().__init__(title, description, start_date, end_date, start_date, end_date)
+        super().__init__(title=title,
+                         description=description,
+                         start_date=start_date,
+                         end_date=end_date,
+                         startline=startline,
+                         deadline=deadline)
 
         self._subgoals = {}
         self._completed_steps = 0
@@ -56,8 +61,9 @@ class Goal(TemporalTask):
 
     def to_dict(self):
         return {
+            **super().to_dict(),
             "_completed_steps": self._completed_steps,
-            "_subgoals": [subgoal.to_dict() for subgoal in self._subgoals],
+            "_subgoals": [subgoal.to_dict() for subgoal in self._subgoals.values()],
         }
 
     def get_completion_status(self):

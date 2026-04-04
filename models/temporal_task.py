@@ -14,7 +14,15 @@ class TemporalTask(Task):
     _startline: Optional[datetime] = None
     _schedule_intervals: Optional[List[TimeInterval]] = None
 
-    def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, schedule_intervals: Optional[List[TimeInterval]] = None):
+    def __init__(
+            self, 
+            title: str, 
+            description: str, 
+            start_date: datetime, 
+            end_date: datetime, 
+            startline: Optional[datetime] = None, 
+            deadline: Optional[datetime] = None, 
+            schedule_intervals: Optional[List[TimeInterval]] = None):
         super().__init__(title, description, deadline)
 
         self._start_date = start_date
@@ -32,14 +40,19 @@ class TemporalTask(Task):
     def __post_init__(self):
         if self._startline and self._start_date < self._startline:
             raise ValueError("start_date must not be before startline.")
+
         if self._deadline and self._deadline < self._end_date:
             raise ValueError("end_date must not be after deadline.")
+
         if self._start_date > self._end_date:
             raise ValueError("start_date must be before end_date.")
+
         if (self._end_date - self._start_date) < timedelta(seconds=5):
             raise ValueError("start_date → end_date must be at least 5 seconds apart.")
+
         if self._startline and self._deadline and (self._deadline - self._startline) < timedelta(seconds=5):
             raise ValueError("startline → deadline must be at least 5 seconds apart.")
+
         for interval in self._schedule_intervals:
             if (
                 (self._startline and interval.start_date < self._startline) or 
@@ -50,37 +63,42 @@ class TemporalTask(Task):
     def __eq__(self, other):
         if not isinstance(other, TemporalTask):
             return NotImplemented
-        return (
-            self._title == other._title and 
-            self._description == other._description and
-            self._start_date == other._start_date and
-            self._end_date == other._end_date and
-            self._startline == other._startline and
-            self._deadline == other._deadline and
-            self._completed == other._completed
-        )
-    
+        return self.to_dict() == other.to_dict()
+
     def __str__(self):
-        return f"TemporalTask(\n\tTitle: {self._title}\n\tDescription: {self._description}\n\tStart Date: {self._start_date}\n\tEnd Date: {self._end_date}\n\tStart Line: {self._startline}\n\tDead Line: {self._deadline}\n\tCompleted: {self._completed}\n)"
-    
+        return f"""
+            TemporalTask(
+            \n\tTitle: {self._title}
+            \n\tDescription: {self._description}
+            \n\tStart Date: {self._start_date}
+            \n\tEnd Date: {self._end_date}
+            \n\tStart Line: {self._startline}
+            \n\tDead Line: {self._deadline}
+            \n\tCompleted: {self._completed}\n
+            )"""
+
     def __hash__(self):
-        return hash((self._title, self._description, self._completed, self._start_date, self._end_date))
-    
+        return hash((
+            self._title, 
+            self._description, 
+            self._completed, 
+            self._start_date, 
+            self._end_date
+        ))
+
     def to_dict(self):
         return {
-            "_title": self._title,
-            "_description": self._description,
-            "_start_date": self._start_date,
-            "_end_date": self._end_date,
-            "_startline": self._startline,
-            "_deadline": self._deadline,
+            **super().to_dict(),
+            "_start_date": self._start_date.isoformat(),
+            "_end_date": self._end_date.isoformat(),
+            "_startline": self._startline.isoformat() if self._startline is not None else None,
             "_completed": self._completed,
-            "_schedule_intervals": self._schedule_intervals
+            "_schedule_intervals": [interval.to_dict() for interval in self._schedule_intervals]
         }
 
     def get_start_date(self):
         return self._start_date
-    
+
     def get_end_date(self):
         return self._end_date
 
@@ -89,13 +107,13 @@ class TemporalTask(Task):
 
     def get_total_time(self):
         return self._end_date - self._start_date
-    
+
     def get_time_slot(self):
         return TimeInterval(self._start_date, self._end_date)
 
     def get_schedule_intervals(self):
         return self._schedule_intervals.copy()
-    
+
     def get_duration(self):
         return self._end_date - self._start_date 
 
@@ -114,6 +132,9 @@ class TemporalTask(Task):
         merged_interval = interval
         for merger in merge_intervals:
             self._schedule_intervals.remove(merger)
-            merged_interval = TimeInterval(min(merged_interval.start_date, merger.start_date), max(merged_interval.end_date, merger.end_date)) 
-        
+            merged_interval = TimeInterval(
+                min(merged_interval.start_date, merger.start_date),
+                max(merged_interval.end_date, merger.end_date)
+            )
+
         self._schedule_intervals.append(merged_interval)

@@ -186,3 +186,125 @@ def test_get_progress_percent(dummy_goal: Goal):
         
     dummy_goal.complete_subgoal("Subgoal A")
     assert 28.57142857142857 == dummy_goal.get_progress_percent()
+
+def test_to_dict(dummy_goal: Goal):
+    expected = {
+        '_title': 'Root Goal',
+        '_description': 'Example text', 
+	    '_completed': False, 
+	    '_deadline': '2026-10-01T03:00:00', 
+	    '_start_date': '2025-10-01T02:00:00', 
+	    '_end_date': '2026-10-01T03:00:00', 
+	    '_startline': '2025-10-01T02:00:00', 
+	    '_schedule_intervals': [
+            {
+                'start_date': '2025-10-01T02:00:00', 
+	            'end_date': '2026-10-01T03:00:00'
+            }
+        ], 
+	    '_completed_steps': 0, 
+	    '_subgoals': [
+            {
+                '_title': 'Dummy Temporal Task', 
+	            '_description': 'Example text', 
+	            '_completed': False, 
+	            '_deadline': None, 
+	            '_start_date': '2025-10-10T00:00:00', 
+	            '_end_date': '2025-10-17T00:00:00', 
+	            '_startline': None, 
+	            '_schedule_intervals': [
+                    {
+                        'start_date': '2025-10-10T00:00:00', 
+	                    'end_date': '2025-10-17T00:00:00'
+                    }
+                ]
+            }, 
+	        {
+                '_title': 'Subgoal A', 
+	            '_description': 'Example text', 
+	            '_completed': False, 
+	            '_deadline': '2026-03-30T00:00:00', 
+	            '_start_date': '2025-10-01T02:00:00', 
+	            '_end_date': '2026-03-30T00:00:00', 
+	            '_startline': '2025-10-01T02:00:00', 
+	            '_schedule_intervals': [
+                    {
+                        'start_date': '2025-10-01T02:00:00', 
+	                    'end_date': '2026-03-30T00:00:00'
+                    }
+                ], 
+	            '_completed_steps': 0, 
+	            '_subgoals': [
+                    {
+                        '_title': 'Subgoal AA', 
+	                    '_description': 'Example text', 
+	                    '_completed': False, 
+	                    '_deadline': '2025-12-30T00:00:00', 
+	                    '_start_date': '2025-10-01T02:00:00', 
+	                    '_end_date': '2025-12-30T00:00:00', 
+	                    '_startline': '2025-10-01T02:00:00', 
+	                    '_schedule_intervals': [
+                            {
+                                'start_date': '2025-10-01T02:00:00', 
+	                            'end_date': '2025-12-30T00:00:00'
+                            }
+                        ], 
+	                    '_completed_steps': 0, 
+	                    '_subgoals': []
+                    }
+                ]
+            }, 
+	        {
+                '_title': 'Subgoal B', 
+	            '_description': 'Example text', 
+	            '_completed': False, 
+	            '_deadline': '2026-10-01T02:00:00', 
+	            '_start_date': '2026-03-30T00:00:00', 
+	            '_end_date': '2026-10-01T02:00:00', 
+	            '_startline': '2026-03-30T00:00:00', 
+	            '_schedule_intervals': [
+                    {
+                        'start_date': '2026-03-30T00:00:00', 
+	                    'end_date': '2026-10-01T02:00:00'
+                    }
+                ], 
+	            '_completed_steps': 0, 
+	            '_subgoals': [
+                    {
+                        '_title': 'Subgoal BA', 
+	                    '_description': 'Example text', 
+	                    '_completed': False, 
+	                    '_deadline': '2026-05-01T00:00:00', 
+	                    '_start_date': '2026-03-30T00:00:00', 
+	                    '_end_date': '2026-05-01T00:00:00', 
+	                    '_startline': '2026-03-30T00:00:00', 
+	                    '_schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 
+	                    'end_date': '2026-05-01T00:00:00'}], 
+	                    '_completed_steps': 0, 
+	                    '_subgoals': []
+                    }, 
+	                {
+                        '_title': 'Subgoal BB', 
+	                    '_description': 'Example text', 
+	                    '_completed': False, 
+	                    '_deadline': '2026-10-01T00:00:00', 
+	                    '_start_date': '2026-05-01T00:00:00', 
+	                    '_end_date': '2026-10-01T00:00:00', 
+	                    '_startline': '2026-05-01T00:00:00', 
+	                    '_schedule_intervals': [{'start_date': '2026-05-01T00:00:00', 
+	                    'end_date': '2026-10-01T00:00:00'}], 
+	                    '_completed_steps': 0, 
+	                    '_subgoals': []
+                    }, 
+	                {
+                        '_title': 'Task', 
+	                    '_description': 'Example text', 
+	                    '_completed': False, 
+	                    '_deadline': '2026-05-01T00:00:00'
+                    }
+                ]
+            }
+        ]
+    }
+
+    assert expected == dummy_goal.to_dict()

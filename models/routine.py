@@ -6,26 +6,43 @@ from models.task import Task
 from models.temporal_task import TemporalTask
 
 @dataclass
+class RoutineEntry:
+    task: TemporalTask
+    duration: timedelta
+
+    def to_dict(self):
+        return {
+            "task": self.task,
+            "duration": self.duration.isoformat()
+        }
+
+@dataclass
 class Routine(TemporalTask):
     _repeated_time_difference = None
     _tasks = []
-    _time_duration_map = {}
 
-    def __init__(self, title: str, description: str, start_date: datetime, end_date: Optional[datetime] = None, repeated_time_difference: timedelta = timedelta(1)):
+    def __init__(
+            self,
+            title: str,
+            description: str,
+            start_date: datetime,
+            end_date: Optional[datetime] = None,
+            repeated_time_difference: timedelta = timedelta(1)
+        ):
         super().__init__(title, description, start_date, end_date)
-        
-        self._time_duration_map = {}
-        self._tasks = []
+
+        self._tasks: list[RoutineEntry] = []
         self._repeated_time_difference = repeated_time_difference
 
     @property
     def total_estimated_time(self):
         total = timedelta()
-        for task in self._tasks:
+        for entry in self._tasks:
+            task = entry["task"]
             if isinstance(task, TemporalTask):
                 total += task.get_total_time()
             else:
-                total += self._time_duration_map[task]
+                total += entry["duration"]
         return total
 
     def _check_index(self, index):
@@ -40,8 +57,7 @@ class Routine(TemporalTask):
     def to_dict(self):
         return {
            "_repeated_time_difference": self._repeated_time_difference,
-           "_time_duration_map": self._time_duration_map.items(),
-           "_tasks": [task.to_dict() for task in self._tasks]
+           "_tasks": [entry.to_dict() for entry in self._tasks],
         }
 
     def get_tasks(self):
@@ -52,20 +68,20 @@ class Routine(TemporalTask):
             self._check_index(key)
             return self._tasks[key]
         elif (isinstance(key, str)):
-            for task in self._tasks:
-                if (task._title == key):
-                    return task
+            for entry in self._tasks:
+                if (entry.task._title == key):
+                    return entry.task
             raise ValueError("Task with given title not found!")
         raise TypeError("Key must be an int or str")
     
     def get_task_complete_time(self, key):
         if (isinstance(key, int)):
             self._check_index(key)
-            return self._time_duration_map[self._tasks[key]]
+            return self._tasks[key].duration
         elif (isinstance(key, str)):
-            for item in self._tasks:
-                if (item._title == key and item in self._time_duration_map):
-                    return self._time_duration_map[item]
+            for entry in self._tasks:
+                if (entry.task._title == key):
+                    return entry.duration
             raise ValueError("Task with given title not found!")
         raise TypeError("Key must be an int or str")
     
@@ -81,24 +97,19 @@ class Routine(TemporalTask):
             else:
                 raise ValueError("A complete time must be provided to add a task. Either add start / end date of temporal task, or complete_time of non-temporal task")
         if self._check_complete_time(complete_time):
-            self._tasks.append(task)
-            self._time_duration_map[task] = complete_time
+            self._tasks.append(
+                RoutineEntry(task=task, duration=complete_time)
+            )
             return
         raise ValueError("Complete time must be greater than 5 seconds")
 
     def remove_task(self, key):
         if (isinstance(key, int)):
-            self._check_index(key)
-            if (self._tasks[key] in self._time_duration_map):
-                self._time_duration_map.pop(self._tasks[key])
-
             self._tasks.pop(key)
             return
         elif (isinstance(key, str)):
-            for index, task in enumerate(self._tasks):
-                if (task._title == key):
-                    if (key in self._time_duration_map):
-                        self._time_duration_map.pop(key)
+            for index, entry in enumerate(self._tasks):
+                if (entry.task._title == key):
                     self._tasks.pop(index)
                     return
             raise ValueError("Task with given title not found!")

@@ -71,3 +71,23 @@ def test_add_schedule_interval_invalid_values():
         pytest.raises(ValueError, task.add_schedule_interval(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 10))))
     with pytest.raises(ValueError):
         pytest.raises(ValueError, task.add_schedule_interval(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 12))))
+
+def test_to_dict():
+    task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
+    expected = {
+        '_completed': False,
+        '_deadline': '2025-10-10T00:00:00',
+        '_description': 'this is a test task',
+        '_end_date': '2025-10-10T00:00:00',
+        '_schedule_intervals': [
+            {
+                'end_date': '2025-10-10T00:00:00',
+                'start_date': '2025-10-02T00:00:00',
+            },
+        ],
+        '_start_date': '2025-10-02T00:00:00',
+        '_startline': '2025-10-02T00:00:00',
+        '_title': 'test',
+    }
+    
+    assert task.to_dict() == expected

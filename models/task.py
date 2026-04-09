@@ -19,11 +19,7 @@ class Task:
         self._description = description
         self._deadline = deadline
 
-    def __eq__(self, other):
-        if TYPE_CHECKING:
-            from models.temporal_task import TemporalTask
-            if not isinstance(other, TemporalTask):
-                return NotImplemented
+    def __eq__(self, other: Task):
         return self.to_dict() == other.to_dict()
 
     def __str__(self):
@@ -33,10 +29,10 @@ class Task:
                     \n\tDeadline: {self._deadline}
                     \n\tCompleted: {self._completed}
                 \n)"""
-    
+
     def __hash__(self):
         return hash(self.__str__())
-    
+
     def to_dict(self):
         return {
             "_title": self._title,

@@ -39,7 +39,7 @@ class Goal(TemporalTask):
 
         return "\n".join(lines)
 
-    def _check_index(self, index):
+    def _check_index(self, index: int):
         if index is None or index < 0 or index >= len(self._subgoals):
             raise IndexError("Invalid subgoal index")
     
@@ -79,17 +79,16 @@ class Goal(TemporalTask):
                 count += subgoal.get_num_subgoals()
         return count
 
-    def get_subgoal(self, key):
-        if isinstance(key, int):
-            self._check_index(key)
-            values = list(self._subgoals.values())
-            self._check_index(key)
-            return values[key]
-        elif isinstance(key, str):
-            if key in self._subgoals:
-                return self._subgoals[key]
-            raise ValueError(f"Goal with title: {key} not found")
-        raise TypeError("Key must be an int or str")
+    def get_subgoal_by_index(self, key: int):
+        self._check_index(key)
+        values = list(self._subgoals.values())
+        self._check_index(key)
+        return values[key]
+
+    def get_subgoal_by_title(self, key: str):
+        if key in self._subgoals:
+            return self._subgoals[key]
+        raise ValueError(f"Goal with title: {key} not found")
 
     def get_subgoals(self):
         return list(self._subgoals.values())
@@ -98,38 +97,33 @@ class Goal(TemporalTask):
         for subgoal in self._subgoals.values():
             subgoal.set_completed()
         self._completed = True
-    
+
     def add_subgoal(self, goal: Task):
         self._check_time_period(goal)
-        self._subgoals[goal._title] = goal
+        self._subgoals[goal._title] = goal # Potentially invalid
 
-    def remove_subgoal(self, key):
-        if isinstance(key, int):
-            self._check_index(key)
-            del list(self._subgoals.values())[key]
-        elif isinstance(key, str):
-            if (key in self._subgoals):
-                self._subgoals.pop(key)
-                return
+    def remove_subgoal_by_index(self, key: int):
+        self._check_index(key)
+        del list(self._subgoals.values())[key]
+
+    def remove_subgoal_by_title(self, key: str):
+        if (key not in self._subgoals):
             raise ValueError(f"Goal with title: {key} not found")
-        else:
-            raise TypeError("Key must be an int or str")
-        
-    def complete_subgoal(self, key):
-        if isinstance(key, int):
-            self._check_index(key)
-            list(self._subgoals.values())[int(key)].set_completed()
-        elif isinstance(key, str):
-            if (key in self._subgoals):
-                self._subgoals[key].set_completed()
-                return
-            raise ValueError(f"Goal with title: ({key}) not found")
-        else:
-            raise TypeError("Key must be an int or str")
+        self._subgoals.pop(key)
+
+    def complete_subgoal_by_index(self, key: int):
+        self._check_index(key)
+        list(self._subgoals.values())[int(key)].set_completed()
+
+    def complete_subgoal_by_title(self, key: str):
+        if (key in self._subgoals):
+            self._subgoals[key].set_completed()
+            return
+        raise ValueError(f"Goal with title: ({key}) not found")
 
     def get_progress_fraction(self):
         return f"{self.get_completion_status()}/{self.get_num_subgoals()}"
-    
+
     def get_progress_percent(self):
         if not self._subgoals:
             return 100.0

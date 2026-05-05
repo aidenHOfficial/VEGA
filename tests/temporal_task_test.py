@@ -74,6 +74,7 @@ def test_add_schedule_interval_invalid_values():
 
 def test_to_dict():
     task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
+    
     expected = {
         '_completed': False,
         '_deadline': '2025-10-10T00:00:00',
@@ -88,6 +89,7 @@ def test_to_dict():
         '_start_date': '2025-10-02T00:00:00',
         '_startline': '2025-10-02T00:00:00',
         '_title': 'test',
+        '_type': 'TemporalTask'
     }
     
     assert task.to_dict() == expected

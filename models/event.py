@@ -118,7 +118,22 @@ class Event:
             "_personal_value": self._personal_value,
             "_relational_value": self._relational_value
         }
-    
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._task = Task.from_dict(data["_task"])
+        obj._goal_value = int(data["_goal_value"])
+        obj._routine_value = int(data["_routine_value"])
+        obj._personal_value = int(data["_personal_value"])
+        obj._relational_value = int(data["_relational_value"])
+
+        return obj
+        
     def get_priority_score(self):
         return self._get_scemantic_score() * self._get_urgency_score()
     

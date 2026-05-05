@@ -5,25 +5,10 @@ from dataclasses import dataclass
 from models.task import Task
 from models.time_interval import TimeInterval
 from models.temporal_task import TemporalTask
+from models.routine_entry import RoutineEntry
 
 @dataclass
-class RoutineEntry:
-    task: TemporalTask
-    duration: timedelta
-
-    def __hash__(self):
-        return hash((
-            self.task,
-            self.duration
-        ))
-
-    def to_dict(self):
-        return {
-            "task": self.task.to_dict(),
-            "duration": self.duration.total_seconds()
-        }
-
-@dataclass
+@Task.register
 class Routine(TemporalTask):
     _repeated_time_difference = None
     _tasks = []
@@ -77,6 +62,18 @@ class Routine(TemporalTask):
            "_repeated_time_difference": self._repeated_time_difference.total_seconds(),
            "_tasks": [entry.to_dict() for entry in self._tasks],
         }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+        
+        obj._repeated_time_difference = timedelta(seconds=data["_repeated_time_difference"])
+        obj._tasks = [RoutineEntry.from_dict(entry) for entry in data["_tasks"]]
+        
+        return obj
 
     def get_tasks(self):
         return [entry.task for entry in self._tasks]

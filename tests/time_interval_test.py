@@ -35,3 +35,13 @@ def test_to_dict():
         "end_date": datetime(2004, 10, 2).isoformat()
     }
     assert interval.to_dict() == expected
+    
+def test_from_dict():
+    json = {
+        "start_date": datetime(2004, 10, 1).isoformat(),
+        "end_date": datetime(2004, 10, 2).isoformat()
+    }
+    interval = TimeInterval.from_dict(json)
+    expected = TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2))
+    
+    assert interval == expected

@@ -287,20 +287,6 @@ def test_to_dict():
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
 
-    print(f"routine.to_dict(): {routine.to_dict()}")
-
-    expected = {
-        '_repeated_time_difference': 86400.0, 
-        '_tasks': [
-            {
-                'task': {'_title': 'Task A', '_description': 'Example text', '_completed': False, '_deadline': None}, 
-                'duration': 1800.0
-            }, 
-            {
-                'task': {'_title': 'Task B', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-10-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 
-                'duration': 3600.0
-            }
-        ]
-    }
+    expected = {'_repeated_time_difference': 86400.0, '_tasks': [{'task': {'_type': 'Task', '_title': 'Task A', '_description': 'Example text', '_completed': False, '_deadline': None}, 'duration': 1800.0}, {'task': {'_type': 'TemporalTask', '_title': 'Task B', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-10-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 'duration': 3600.0}]}
 
     assert expected == routine.to_dict()

@@ -40,6 +40,19 @@ class Calendar:
             "_dated_todos": [event.to_dict() for event in self._dated_todos],
             "_todos": [event.to_dict() for event in self._todos]
         }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._time_tree = TimeTree.from_dict(data["_time_tree"])
+        obj._dated_todos = [Event.from_dict(e) for e in data["_dated_todos"]]
+        obj._todos = [Event.from_dict(e) for e in data["_todos"]]
+
+        return obj
     
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)

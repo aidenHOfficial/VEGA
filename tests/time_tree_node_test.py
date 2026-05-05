@@ -169,3 +169,22 @@ def test_get_key():
     node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
         
     assert TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)) == node.get_key()
+    
+def test_to_dict():
+    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    task_event = Event(temp_task, 20, 15, 10, 25)
+    node = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+    
+    expected = {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T00:00:00', '_end_date': '2025-10-02T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}
+    
+    assert node.to_dict() == expected
+    
+def test_from_dict():
+    json = {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T00:00:00', '_end_date': '2025-10-02T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}
+    
+    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    task_event = Event(temp_task, 20, 15, 10, 25)
+    expected = TimeTreeNode(task_event, TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))
+    node = TimeTreeNode.from_dict(json)
+    
+    assert node == expected

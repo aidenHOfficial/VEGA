@@ -46,6 +46,7 @@ def test_get_deadline_with_no_deadline():
 def test_to_dict():
     task = Task("test", "this is a test task", None)
     expected = {
+        "_type": "Task",
         "_title": "test",
         "_description": "this is a test task",
         "_completed": False,
@@ -53,3 +54,16 @@ def test_to_dict():
     }
 
     assert task.to_dict() == expected
+    
+def test_from_dict():
+    json = {
+        "_type": "Task",
+        "_title": "test",
+        "_description": "this is a test task",
+        "_completed": False,
+        "_deadline": None
+    }
+    task = Task.from_dict(json)
+    expected = Task("test", "this is a test task", None)
+        
+    assert task == expected

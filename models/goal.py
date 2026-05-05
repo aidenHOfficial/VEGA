@@ -6,6 +6,7 @@ from models.task import Task
 from models.temporal_task import TemporalTask
 
 @dataclass
+@Task.register
 class Goal(TemporalTask):
     _subgoals: Dict[str, Task] = field(default_factory=dict)
     _completed_steps: int = 0
@@ -65,6 +66,21 @@ class Goal(TemporalTask):
             "_completed_steps": self._completed_steps,
             "_subgoals": [subgoal.to_dict() for subgoal in self._subgoals.values()],
         }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = super().from_dict(data)
+
+        obj._completed_steps = int(data["_completed_steps"])
+        obj._subgoals = {
+            sub["_title"]: Task.from_dict(sub)
+            for sub in data["_subgoals"]
+        }
+
+        return obj
 
     def get_completion_status(self):
         completed = self._completed
@@ -100,7 +116,7 @@ class Goal(TemporalTask):
 
     def add_subgoal(self, goal: Task):
         self._check_time_period(goal)
-        self._subgoals[goal._title] = goal # Potentially invalid
+        self._subgoals[goal._title] = goal
 
     def remove_subgoal_by_index(self, key: int):
         self._check_index(key)

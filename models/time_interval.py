@@ -37,6 +37,18 @@ class TimeInterval:
             "start_date": self.start_date.isoformat(),
             "end_date": self.end_date.isoformat()
         }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+        
+        obj.start_date = datetime.fromisoformat(data["start_date"])
+        obj.end_date = datetime.fromisoformat(data["end_date"])
+        
+        return obj
 
     def get_start_date(self):
         return self.start_date

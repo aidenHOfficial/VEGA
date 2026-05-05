@@ -6,6 +6,7 @@ from models.task import Task
 from models.time_interval import TimeInterval
 
 @dataclass
+@Task.register
 class TemporalTask(Task):
     _start_date: datetime = None
     _end_date: datetime = None
@@ -95,6 +96,22 @@ class TemporalTask(Task):
             "_completed": self._completed,
             "_schedule_intervals": [interval.to_dict() for interval in self._schedule_intervals]
         }
+        
+    @classmethod
+    def _from_dict(cls, data):
+        obj = super()._from_dict(data)
+
+        obj._start_date = datetime.fromisoformat(data["_start_date"])
+        obj._end_date = datetime.fromisoformat(data["_end_date"])
+        obj._startline = (
+            datetime.fromisoformat(data["_startline"])
+            if data["_startline"] else None
+        )
+        obj._schedule_intervals = [
+            TimeInterval.from_dict(i) for i in data["_schedule_intervals"]
+        ]
+
+        return obj
 
     def get_start_date(self):
         return self._start_date

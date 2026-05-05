@@ -14,6 +14,24 @@ class TimeTree:
     def __init__(self):
         self._root = None
         self._size = 0
+    
+    def to_dict(self):
+        return {
+            "_root": self._root.to_dict(),
+            "_size": self._size
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._root = TimeTreeNode.from_dict(data["_root"])
+        obj._size = int(data["_size"])
+
+        return obj
 
     def _height(self, node: TimeTreeNode):
         if (not node):

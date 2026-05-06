@@ -222,7 +222,7 @@ class TimeTree:
     def to_dict(self):
         return {
             "_size": self._size,
-            "_nodes": self._root.to_dict()
+            "_root": self._root.to_dict()
             #The nodes will all be present because the to_dict() function of the nodes is dfs
         }
 

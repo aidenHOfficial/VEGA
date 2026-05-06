@@ -75,21 +75,14 @@ def test_add_schedule_interval_invalid_values():
 def test_to_dict():
     task = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
     
-    expected = {
-        '_completed': False,
-        '_deadline': '2025-10-10T00:00:00',
-        '_description': 'this is a test task',
-        '_end_date': '2025-10-10T00:00:00',
-        '_schedule_intervals': [
-            {
-                'end_date': '2025-10-10T00:00:00',
-                'start_date': '2025-10-02T00:00:00',
-            },
-        ],
-        '_start_date': '2025-10-02T00:00:00',
-        '_startline': '2025-10-02T00:00:00',
-        '_title': 'test',
-        '_type': 'TemporalTask'
-    }
-    
+    expected = {'_type': 'TemporalTask', '_title': 'test', '_description': 'this is a test task', '_completed': False, '_deadline': '2025-10-10T00:00:00', '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-10T00:00:00', '_startline': '2025-10-02T00:00:00', '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
+
     assert task.to_dict() == expected
+
+def test_from_dict():
+    json = {'_type': 'TemporalTask', '_title': 'test', '_description': 'this is a test task', '_completed': False, '_deadline': '2025-10-10T00:00:00', '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-10T00:00:00', '_startline': '2025-10-02T00:00:00', '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
+    task = TemporalTask.from_dict(json)
+
+    expected = TemporalTask("test", "this is a test task", datetime(2025, 10, 2), datetime(2025, 10, 10), datetime(2025, 10, 2), datetime(2025, 10, 10))
+
+    assert task == expected

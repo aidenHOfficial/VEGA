@@ -59,8 +59,9 @@ class Routine(TemporalTask):
 
     def to_dict(self):
         return {
-           "_repeated_time_difference": self._repeated_time_difference.total_seconds(),
-           "_tasks": [entry.to_dict() for entry in self._tasks],
+            **super().to_dict(),
+            "_repeated_time_difference": self._repeated_time_difference.total_seconds(),
+            "_tasks": [entry.to_dict() for entry in self._tasks],
         }
         
     @classmethod
@@ -68,7 +69,7 @@ class Routine(TemporalTask):
         if data is None:
             return None
         
-        obj = cls.__new__(cls)
+        obj = super()._from_dict(data)
         
         obj._repeated_time_difference = timedelta(seconds=data["_repeated_time_difference"])
         obj._tasks = [RoutineEntry.from_dict(entry) for entry in data["_tasks"]]

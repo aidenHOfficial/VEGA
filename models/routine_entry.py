@@ -29,6 +29,6 @@ class RoutineEntry:
         obj = cls.__new__(cls)
         
         obj.task = Task.from_dict(data["task"])
-        obj.duration = timedelta(int(seconds=data["duration"]))
+        obj.duration = timedelta(seconds=data["duration"])
         
         return obj

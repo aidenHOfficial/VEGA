@@ -10,21 +10,39 @@ from models.temporal_task import TemporalTask
 class TimeTree:  
     _root: TimeTreeNode
     _size: int
-    
+
     def __init__(self):
         self._root = None
         self._size = 0
+    
+    def to_dict(self):
+        return {
+            "_root": self._root.to_dict(),
+            "_size": self._size
+        }
         
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._root = TimeTreeNode.from_dict(data["_root"])
+        obj._size = int(data["_size"])
+
+        return obj
+
     def _height(self, node: TimeTreeNode):
         if (not node):
             return 0
         return node.height
-    
+
     def _get_balance(self, node: TimeTreeNode):
         if not node:
             return 0
         return self._height(node.left) - self._height(node.right)
-    
+
     def _min_value_node(self, node: TimeTreeNode):
         current = node
 
@@ -200,6 +218,13 @@ class TimeTree:
             print(prefix + ("├── " if is_left else "└── ") + str(node.key) + f" ({node.get_num_events()} events) " + ("Left TimeTreeNode" if is_left else "Right Node"))
             self._print_tree_recursive(node.left, prefix + ("│   " if is_left else "    "), True)
             self._print_tree_recursive(node.right, prefix + ("│   " if is_left else "    "), False)
+
+    def to_dict(self):
+        return {
+            "_size": self._size,
+            "_root": self._root.to_dict()
+            #The nodes will all be present because the to_dict() function of the nodes is dfs
+        }
 
     def get_size(self):
         return self._size

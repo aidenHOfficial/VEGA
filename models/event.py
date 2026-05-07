@@ -48,7 +48,7 @@ class Event:
         return hash(self.__str__())
     
     def __repr__(self):
-        return f"Event(title:{self._task._title}, description:{self._task._description})"
+        return f"Event(title:{self._task.title}, description:{self._task.description})"
 
     def _time_difference_to_now(self):
 
@@ -71,41 +71,69 @@ class Event:
         time_diffrerence = self._time_difference_to_now().total_seconds() / 3600
 
         # m * tanh((t/d)+s) + m
-        return m * ((math.e**((time_diffrerence / d) + shift) - math.e**(-((time_diffrerence / d) + shift))) / (math.e**((time_diffrerence / d) + shift) + math.e**(-((time_diffrerence / d) + shift)))) + m
+        # m * ((math.e**((time_diffrerence / d) + shift) - math.e**(-((time_diffrerence / d) + shift))) / (math.e**((time_diffrerence / d) + shift) + math.e**(-((time_diffrerence / d) + shift)))) + m
+        temp1 = (time_diffrerence / d) + shift
+        temp2 = (math.e ** temp1 - math.e ** (-temp1))
+        temp3 = (math.e ** temp1 + math.e ** (-temp1))
+        score = (m * (temp2 / temp3)) + m
+        return score
 
     def _get_scemantic_score(self):
         # Returns a score between 0 and 100
-
         return min((GW * self._goal_value) + (RW * self._routine_value) + (PW * self._personal_value) + (REW * self._relational_value), 100)
-    
+
     @property
     def schedule_intervals(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_schedule_intervals()
         return None
-    
+
     @property
     def start_date(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_start_date()
         return None
-        
+
     @property
     def end_date(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_end_date()
         return None
-    
+
     @property
     def startline(self):
         if (isinstance(self._task, TemporalTask)):
             return self._task.get_startline()
         return None
-        
+
     @property
     def deadline(self):
         return self._task.get_deadline()
     
+    def to_dict(self):
+        return {
+            "_task": self._task.to_dict(),
+            "_goal_value": self._goal_value,
+            "_routine_value": self._routine_value,
+            "_personal_value": self._personal_value,
+            "_relational_value": self._relational_value
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._task = Task.from_dict(data["_task"])
+        obj._goal_value = int(data["_goal_value"])
+        obj._routine_value = int(data["_routine_value"])
+        obj._personal_value = int(data["_personal_value"])
+        obj._relational_value = int(data["_relational_value"])
+
+        return obj
+        
     def get_priority_score(self):
         return self._get_scemantic_score() * self._get_urgency_score()
     
@@ -113,7 +141,7 @@ class Event:
         return self._task
     
     def get_deadline(self):
-        return self._task._deadline
+        return self._task.deadline
     
     def get_startline(self):
         if (isinstance(self._task, TemporalTask)):

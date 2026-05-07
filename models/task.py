@@ -1,49 +1,70 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
-from dataclasses import dataclass
 
 @dataclass
 class Task:
-    _title: str
-    _description: str
-    _completed: bool = False
-    _deadline: Optional[datetime] = None
+    title: str
+    description: str
+    completed: bool = False
+    deadline: Optional[datetime] = None
+    registry = {}
 
-    def __init__(self, title: str, description: str, deadline: Optional[datetime] = None):
-        self._title = title
-        self._description = description
-        self._deadline = deadline
+    @classmethod
+    def register(cls, subclass):
+        cls.registry[subclass.__name__] = subclass
+        return subclass
 
-    def __eq__(self, other):
-        if TYPE_CHECKING:
-            from models.temporal_task import TemporalTask
-            if not isinstance(other, TemporalTask):
-                return NotImplemented
-        return (
-            self._title == other._title and 
-            self._description == other._description and
-            self._deadline == other._deadline and
-            self._completed == other._completed
-        )
-    
-    def __str__(self):
-        return f"Task(\n\tTitle: {self._title}\n\tDescription: {self._description}\n\tDeadline: {self._deadline}\n\tCompleted: {self._completed}\n)"
-    
     def __hash__(self):
         return hash(self.__str__())
 
+    def to_dict(self):
+        return {
+            "type": self.__class__.__name__,
+            "title": self.title,
+            "description": self.description,
+            "completed": self.completed,
+            "deadline": self.deadline.isoformat() if self.deadline is not None else None
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        task_type = data.get("type", "Task")
+
+        actual_cls = cls.registry.get(task_type)
+        if actual_cls is None:
+            raise ValueError(f"Unknown task type: {task_type}")
+
+        return actual_cls._from_dict(data)
+
+    @classmethod
+    def _from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+        
+        obj.title = data["title"]
+        obj.description = data["description"]
+        obj.completed = bool(data["completed"])
+        obj.deadline = datetime.fromisoformat(data["deadline"]) if data["deadline"] else None
+        
+        return obj
+        
     def get_completion_status(self):
-        return self._completed
-    
+        return self.completed
+
     def get_title(self):
-        return self._title
-    
+        return self.title
+
     def get_description(self):
-        return self._description
+        return self.description
 
     def get_deadline(self):
-        return self._deadline
-    
+        return self.deadline
+
     def set_completed(self):
-        self._completed = True
+        self.completed = True
+        
+Task.registry["Task"] = Task

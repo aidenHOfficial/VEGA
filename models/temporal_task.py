@@ -1,107 +1,124 @@
 from __future__ import annotations
 from typing import Optional, List
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from models.task import Task
 from models.time_interval import TimeInterval
 
 @dataclass
+@Task.register
 class TemporalTask(Task):
-    _start_date: datetime = None
-    _end_date: datetime = None
-    _completed = False
-    _deadline: Optional[datetime] = None
-    _startline: Optional[datetime] = None
-    _schedule_intervals: Optional[List[TimeInterval]] = None
+    start_date: datetime = None
+    end_date: datetime = None
+    startline: Optional[datetime] = None
+    schedule_intervals: Optional[List[TimeInterval]] = field(default_factory=list)
 
-    def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, schedule_intervals: Optional[List[TimeInterval]] = None):
-        super().__init__(title, description, deadline)
+    # def __init__( self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, schedule_intervals: Optional[List[TimeInterval]] = None): 
+    #     super().__init__(title, description, deadline) 
+    #     self._start_date = start_date 
+    #     self._end_date = end_date 
+    #     self._startline = startline 
+    #     self._schedule_intervals = [] 
 
-        self._start_date = start_date
-        self._end_date = end_date
-        self._startline = startline
-        self._schedule_intervals = []
-        
-        if (schedule_intervals is not None):
-            for interval in schedule_intervals:
-                self.add_schedule_interval(interval)
-        self.add_schedule_interval(TimeInterval(start_date, end_date))
+    #     if (schedule_intervals is not None): 
+    #         for interval in schedule_intervals: self.add_schedule_interval(interval) 
 
-        self.__post_init__()
+    #     self.add_schedule_interval(TimeInterval(start_date, end_date)) 
+    #     self.__post_init__()
 
     def __post_init__(self):
-        if self._startline and self._start_date < self._startline:
+        self.schedule_intervals.append(
+            TimeInterval(self.start_date, self.end_date)
+        )
+
+        if self.startline and self.start_date < self.startline:
             raise ValueError("start_date must not be before startline.")
-        if self._deadline and self._deadline < self._end_date:
+
+        if self.deadline and self.deadline < self.end_date:
             raise ValueError("end_date must not be after deadline.")
-        if self._start_date > self._end_date:
+
+        if self.start_date > self.end_date:
             raise ValueError("start_date must be before end_date.")
-        if (self._end_date - self._start_date) < timedelta(seconds=5):
+
+        if (self.end_date - self.start_date) < timedelta(seconds=5):
             raise ValueError("start_date → end_date must be at least 5 seconds apart.")
-        if self._startline and self._deadline and (self._deadline - self._startline) < timedelta(seconds=5):
+
+        if self.startline and self.deadline and (self.deadline - self.startline) < timedelta(seconds=5):
             raise ValueError("startline → deadline must be at least 5 seconds apart.")
-        for interval in self._schedule_intervals:
+
+        for interval in self.schedule_intervals:
             if (
-                (self._startline and interval.start_date < self._startline) or 
-                (self._deadline and interval.end_date > self._deadline)
+                (self.startline and interval.start_date < self.startline) or 
+                (self.deadline and interval.end_date > self.deadline)
             ):
                 raise ValueError("All reschedule periods must be within startline and deadline.")
 
-    def __eq__(self, other):
-        if not isinstance(other, TemporalTask):
-            return NotImplemented
-        return (
-            self._title == other._title and 
-            self._description == other._description and
-            self._start_date == other._start_date and
-            self._end_date == other._end_date and
-            self._startline == other._startline and
-            self._deadline == other._deadline and
-            self._completed == other._completed
+
+    def to_dict(self):
+        return {
+            **super().to_dict(),
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat(),
+            "startline": self.startline.isoformat() if self.startline is not None else None,
+            "completed": self.completed,
+            "schedule_intervals": [interval.to_dict() for interval in self.schedule_intervals]
+        }
+        
+    @classmethod
+    def _from_dict(cls, data):
+        obj = super()._from_dict(data)
+
+        obj.start_date = datetime.fromisoformat(data["start_date"])
+        obj.end_date = datetime.fromisoformat(data["end_date"])
+        obj.startline = (
+            datetime.fromisoformat(data["startline"])
+            if data["startline"] else None
         )
-    
-    def __str__(self):
-        return f"TemporalTask(\n\tTitle: {self._title}\n\tDescription: {self._description}\n\tStart Date: {self._start_date}\n\tEnd Date: {self._end_date}\n\tStart Line: {self._startline}\n\tDead Line: {self._deadline}\n\tCompleted: {self._completed}\n)"
-    
-    def __hash__(self):
-        return hash((self._title, self._description, self._completed, self._start_date, self._end_date))
-    
+        obj.schedule_intervals = [
+            TimeInterval.from_dict(i) for i in data["schedule_intervals"]
+        ]
+
+        return obj
+
     def get_start_date(self):
-        return self._start_date
-    
+        return self.start_date
+
     def get_end_date(self):
-        return self._end_date
+        return self.end_date
 
     def get_startline(self):
-        return self._startline
+        return self.startline
 
     def get_total_time(self):
-        return self._end_date - self._start_date
-    
+        return self.end_date - self.start_date
+
     def get_time_slot(self):
-        return TimeInterval(self._start_date, self._end_date)
+        return TimeInterval(self.start_date, self.end_date)
 
     def get_schedule_intervals(self):
-        return self._schedule_intervals.copy()
-    
+        return self.schedule_intervals.copy()
+
     def get_duration(self):
-        return self._end_date - self._start_date 
+        return self.end_date - self.start_date 
 
     def add_schedule_interval(self, interval: TimeInterval):
         if (
-            (self._startline and interval.start_date < self._startline) or 
-            (self._deadline and interval.end_date > self._deadline) 
+            (self.startline and interval.start_date < self.startline) or 
+            (self.deadline and interval.end_date > self.deadline) 
         ):            
             raise ValueError("Added period must be within the interval of [start_date, end_date] and [start_line, end_line]")
         
         merge_intervals = [] 
-        for s_interval in self._schedule_intervals:
+        for s_interval in self.schedule_intervals:
             if (s_interval.is_overlapping(interval)):
                 merge_intervals.append(s_interval) 
 
         merged_interval = interval
         for merger in merge_intervals:
-            self._schedule_intervals.remove(merger)
-            merged_interval = TimeInterval(min(merged_interval.start_date, merger.start_date), max(merged_interval.end_date, merger.end_date)) 
-        
-        self._schedule_intervals.append(merged_interval)
+            self.schedule_intervals.remove(merger)
+            merged_interval = TimeInterval(
+                min(merged_interval.start_date, merger.start_date),
+                max(merged_interval.end_date, merger.end_date)
+            )
+
+        self.schedule_intervals.append(merged_interval)

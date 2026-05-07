@@ -23,6 +23,34 @@ class TimeTreeNode:
         self.right = None
         self.height = 1
         self.key = key
+
+    def to_dict(self):
+        return {
+            "key": self.key.to_dict(),
+            "min": self.min.isoformat(),
+            "max": self.max.isoformat(),
+            "height": self.height,
+            "events": [event.to_dict() for event in self.events],
+            "left": self.left.to_dict() if self.left else None,
+            "right": self.right.to_dict() if self.right else None,
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+        
+        obj.key = TimeInterval.from_dict(data["key"])
+        obj.min = datetime.fromisoformat(data["min"])
+        obj.max = datetime.fromisoformat(data["max"])
+        obj.height = int(data["height"])
+        obj.events = [Event.from_dict(event) for event in data["events"]]
+        obj.left = TimeTreeNode.from_dict(data["left"])
+        obj.right = TimeTreeNode.from_dict(data["right"])
+        
+        return obj
     
     def add_event(self, event: Event):
         if (event.get_time_slot() != self.key):
@@ -40,7 +68,7 @@ class TimeTreeNode:
             return
         if (isinstance(key, str)):
             for index, event in enumerate(self.events):
-                if (event._task._title == key):
+                if (event._task.title == key):
                     del self.events[index]
                     return
             raise ValueError("Event with given title not found!")
@@ -56,7 +84,7 @@ class TimeTreeNode:
             return self.events[key]
         if (isinstance(key, str)):
             for event in self.events:
-                if (event._task._title == key):
+                if (event._task.title == key):
                     return event
             raise ValueError("Event with given title not found!")
         raise TypeError("key must be int or string!")

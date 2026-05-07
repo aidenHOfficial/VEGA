@@ -6,21 +6,22 @@ from dataclasses import dataclass
 class TimeInterval:
     start_date: datetime
     end_date: datetime
-    
-    def __init__(self, start_date, end_date):
+
+    def __init__(self, start_date: datetime, end_date: datetime):
         self.start_date = start_date
         self.end_date = end_date
-        
         self.__post_init__()
-        
+
     def __post_init__(self):
         if self.start_date > self.end_date:
             raise ValueError("start_date must be before end_date")
         
     def __eq__(self, other: TimeInterval):
+        if not isinstance(other, TimeInterval):
+            return NotImplemented
         return self.start_date == other.start_date and self.end_date == other.end_date
     
-    def __lt__(self, other):
+    def __lt__(self, other: TimeInterval):
         if not isinstance(other, TimeInterval):
             return NotImplemented
         return (self.start_date, self.end_date) < (other.start_date, other.end_date)
@@ -30,16 +31,34 @@ class TimeInterval:
     
     def __hash__(self):
         return hash(self.__str__())
-      
+    
+    def to_dict(self):
+        return {
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat()
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+        
+        obj.start_date = datetime.fromisoformat(data["start_date"])
+        obj.end_date = datetime.fromisoformat(data["end_date"])
+        
+        return obj
+
     def get_start_date(self):
         return self.start_date
 
     def get_end_date(self):
         return self.end_date
-      
+
     def get_interval(self):
         return (self.start_date, self.end_date)
-    
+
     def get_duration(self):
         return self.end_date - self.start_date
 

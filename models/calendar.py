@@ -9,31 +9,12 @@ from models.temporal_task import TemporalTask
 from models.csp import CSP
 from models.event import Event
 from models.time_tree import TimeTree
-import json
-
-filename = "debug.json"
-def write_to_debug_file(string):
-    with open(filename, 'w') as f:
-        json.dump(string, f, indent=4) 
-
-def stringify_objects(obj):
-    if isinstance(obj, dict):
-        return {k: stringify_objects(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [stringify_objects(v) for v in obj]
-    elif isinstance(obj, tuple):
-        return tuple(stringify_objects(v) for v in obj)
-    elif isinstance(obj, (str, int, float, bool)) or obj is None:
-        return obj
-    else:
-        # For any other custom object
-        return str(obj)
 
 @dataclass
 class Calendar:
     _time_tree: TimeTree
-    _todos: List
-    _dated_todos: List
+    _todos: List[Event]
+    _dated_todos: List[Event]
 
     def __init__(self):
         self._time_tree = TimeTree()
@@ -48,6 +29,29 @@ class Calendar:
         if events:
             events.sort(key=lambda event: event.get_priority_score(), reverse=True)
         return events
+
+    def _get_events(self, TimeInterval: TimeInterval):
+        return self._time_tree.overlap_search(TimeInterval)
+    
+    def to_dict(self):
+        return {
+            "_time_tree": self._time_tree.to_dict(),
+            "_dated_todos": [event.to_dict() for event in self._dated_todos],
+            "_todos": [event.to_dict() for event in self._todos]
+        }
+        
+    @classmethod
+    def from_dict(cls, data):
+        if data is None:
+            return None
+        
+        obj = cls.__new__(cls)
+
+        obj._time_tree = TimeTree.from_dict(data["_time_tree"])
+        obj._dated_todos = [Event.from_dict(e) for e in data["_dated_todos"]]
+        obj._todos = [Event.from_dict(e) for e in data["_todos"]]
+
+        return obj
     
     def schedule_event(self, task: Task, goal_value: float, routine_value: float, personal_value: float, relational_value: float):
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
@@ -55,13 +59,13 @@ class Calendar:
         if isinstance(task, TemporalTask):
             self._time_tree.insert(new_event)
         elif isinstance(task, Task):
-            if (task._deadline):
+            if (task.deadline):
                 bisect.insort(self._dated_todos, new_event)
             else:
-                self._todos.append(task)
+                self._todos.append(new_event)
     
-    def _get_events(self, TimeInterval: TimeInterval):
-        return self._time_tree.overlap_search(TimeInterval)
+    def remove_event(self, event: Event):
+        self._time_tree.delete(event)
     
     def generate_schedule(self, date: datetime):
         domains = defaultdict(set)
@@ -79,6 +83,7 @@ class Calendar:
                 domains[neighbor] = neighbor.schedule_intervals
 
         event_csp = CSP(domains, arcs)
-        constraints = event_csp._AC3()
 
         event_csp.solve()
+
+        return event_csp.solutions

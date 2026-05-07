@@ -22,6 +22,7 @@ class Task:
         self._title = title
         self._description = description
         self._deadline = deadline
+        self._completed = False
 
     def __eq__(self, other: Task):
         return self.to_dict() == other.to_dict()

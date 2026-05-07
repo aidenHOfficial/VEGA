@@ -65,7 +65,7 @@ class Routine(TemporalTask):
         }
         
     @classmethod
-    def from_dict(cls, data):
+    def _from_dict(cls, data):
         if data is None:
             return None
         

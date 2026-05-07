@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from models.task import Task
 from models.temporal_task import TemporalTask
 
-@dataclass
 @Task.register
 class Goal(TemporalTask):
     _subgoals: Dict[str, Task] = field(default_factory=dict)
@@ -68,11 +67,11 @@ class Goal(TemporalTask):
         }
         
     @classmethod
-    def from_dict(cls, data):
+    def _from_dict(cls, data):
         if data is None:
             return None
         
-        obj = super().from_dict(data)
+        obj = super()._from_dict(data)
 
         obj._completed_steps = int(data["_completed_steps"])
         obj._subgoals = {

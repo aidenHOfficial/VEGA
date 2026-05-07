@@ -18,7 +18,7 @@ def test_get_completion_status():
     task = Task("test", "this is a test task")
     assert False == task.get_completion_status()
 
-    task._completed = True
+    task.completed = True
     assert True == task.get_completion_status()
 
 def test_get_title():
@@ -36,7 +36,7 @@ def test_get_description():
     assert task_complicated_description.get_description() == "new description"
 
 def test_get_deadline_with_set_deadline():
-    task = Task("test", "this is a test task", datetime(2004, 10, 1))
+    task = Task("test", "this is a test task", deadline=datetime(2004, 10, 1))
     assert task.get_deadline() == datetime(2004, 10, 1)
 
 def test_get_deadline_with_no_deadline():
@@ -44,26 +44,28 @@ def test_get_deadline_with_no_deadline():
     assert task.get_deadline() == None
 
 def test_to_dict():
-    task = Task("test", "this is a test task", None)
+    task = Task(title="test", description="this is a test task")
     expected = {
-        "_type": "Task",
-        "_title": "test",
-        "_description": "this is a test task",
-        "_completed": False,
-        "_deadline": None
+        "type": "Task",
+        "title": "test",
+        "description": "this is a test task",
+        "completed": False,
+        "deadline": None
     }
+
+    print(task.to_dict())
 
     assert task.to_dict() == expected
     
 def test_from_dict():
     json = {
-        "_type": "Task",
-        "_title": "test",
-        "_description": "this is a test task",
-        "_completed": False,
-        "_deadline": None
+        "type": "Task",
+        "title": "test",
+        "description": "this is a test task",
+        "completed": False,
+        "deadline": None
     }
     task = Task.from_dict(json)
-    expected = Task("test", "this is a test task", None)
+    expected = Task(title="test", description="this is a test task", deadline=None)
         
     assert task == expected

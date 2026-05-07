@@ -9,13 +9,12 @@ from models.temporal_task import TemporalTask
 from models.csp import CSP
 from models.event import Event
 from models.time_tree import TimeTree
-import json
 
 @dataclass
 class Calendar:
     _time_tree: TimeTree
-    _todos: List[Task]
-    _dated_todos: List[Task]
+    _todos: List[Event]
+    _dated_todos: List[Event]
 
     def __init__(self):
         self._time_tree = TimeTree()
@@ -60,10 +59,10 @@ class Calendar:
         if isinstance(task, TemporalTask):
             self._time_tree.insert(new_event)
         elif isinstance(task, Task):
-            if (task._deadline):
+            if (task.deadline):
                 bisect.insort(self._dated_todos, new_event)
             else:
-                self._todos.append(task)
+                self._todos.append(new_event)
     
     def remove_event(self, event: Event):
         self._time_tree.delete(event)

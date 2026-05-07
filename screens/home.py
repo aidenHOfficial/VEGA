@@ -47,9 +47,6 @@ class AsciiTitle(Static):
             mask_lines = f.readlines()
 
         styled = Text()
-
-        styled = Text()
-
         for line, mask in zip(ascii_lines, mask_lines):
             for ch, m in zip(line.rstrip("\n"), mask.rstrip("\n")):
                 if m == "1":
@@ -66,4 +63,3 @@ class HomeScreen(Screen):
         yield Header(show_clock=True)
         yield AsciiTitle()
         yield Menu()
-

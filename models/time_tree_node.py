@@ -68,7 +68,7 @@ class TimeTreeNode:
             return
         if (isinstance(key, str)):
             for index, event in enumerate(self.events):
-                if (event._task._title == key):
+                if (event._task.title == key):
                     del self.events[index]
                     return
             raise ValueError("Event with given title not found!")
@@ -84,7 +84,7 @@ class TimeTreeNode:
             return self.events[key]
         if (isinstance(key, str)):
             for event in self.events:
-                if (event._task._title == key):
+                if (event._task.title == key):
                     return event
             raise ValueError("Event with given title not found!")
         raise TypeError("key must be int or string!")

@@ -1,57 +1,38 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 
+@dataclass
 class Task:
-    _title: str
-    _description: str
-    _completed: bool = False
-    _deadline: Optional[datetime] = None
-    _registry = {}
+    title: str
+    description: str
+    completed: bool = False
+    deadline: Optional[datetime] = None
+    registry = {}
 
     @classmethod
     def register(cls, subclass):
-        cls._registry[subclass.__name__] = subclass
+        cls.registry[subclass.__name__] = subclass
         return subclass
-
-    def __init__(
-            self, 
-            title: str, 
-            description: str, 
-            deadline: Optional[datetime] = None):
-        self._title = title
-        self._description = description
-        self._deadline = deadline
-        self._completed = False
-
-    def __eq__(self, other: Task):
-        return self.to_dict() == other.to_dict()
-
-    def __str__(self):
-        return f"""Task(
-                    \n\tTitle: {self._title}
-                    \n\tDescription: {self._description}
-                    \n\tDeadline: {self._deadline}
-                    \n\tCompleted: {self._completed}
-                \n)"""
 
     def __hash__(self):
         return hash(self.__str__())
 
     def to_dict(self):
         return {
-            "_type": self.__class__.__name__,
-            "_title": self._title,
-            "_description": self._description,
-            "_completed": self._completed,
-            "_deadline": self._deadline.isoformat() if self._deadline is not None else None
+            "type": self.__class__.__name__,
+            "title": self.title,
+            "description": self.description,
+            "completed": self.completed,
+            "deadline": self.deadline.isoformat() if self.deadline is not None else None
         }
         
     @classmethod
     def from_dict(cls, data):
-        task_type = data.get("_type", "Task")
+        task_type = data.get("type", "Task")
 
-        actual_cls = cls._registry.get(task_type)
+        actual_cls = cls.registry.get(task_type)
         if actual_cls is None:
             raise ValueError(f"Unknown task type: {task_type}")
 
@@ -64,26 +45,26 @@ class Task:
         
         obj = cls.__new__(cls)
         
-        obj._title = data["_title"]
-        obj._description = data["_description"]
-        obj._completed = bool(data["_completed"])
-        obj._deadline = datetime.fromisoformat(data["_deadline"]) if data["_deadline"] else None
+        obj.title = data["title"]
+        obj.description = data["description"]
+        obj.completed = bool(data["completed"])
+        obj.deadline = datetime.fromisoformat(data["deadline"]) if data["deadline"] else None
         
         return obj
         
     def get_completion_status(self):
-        return self._completed
+        return self.completed
 
     def get_title(self):
-        return self._title
+        return self.title
 
     def get_description(self):
-        return self._description
+        return self.description
 
     def get_deadline(self):
-        return self._deadline
+        return self.deadline
 
     def set_completed(self):
-        self._completed = True
+        self.completed = True
         
-Task._registry["Task"] = Task
+Task.registry["Task"] = Task

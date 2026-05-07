@@ -108,12 +108,15 @@ def test_get_time_slot_invalid():
 def test_get_dict():
     task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
     task_event = Event(task, 20, 15, 10, 25)
-    expected = {
-        "_task": task.to_dict(),
-        "_goal_value": task_event._goal_value,
-        "_routine_value": task_event._routine_value,
-        "_personal_value": task_event._personal_value,
-        "_relational_value": task_event._relational_value
-    }
+    expected = {'_task': {'_type': 'Task', '_title': 'Reminder', '_description': 'Remind Jasmine to water her plants', '_completed': False, '_deadline': '2025-10-01T00:00:00'}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}
 
-    assert expected == task_event.to_dict()
+    assert task_event.to_dict() == expected
+
+def test_from_dict():
+    json = {'_task': {'_type': 'Task', '_title': 'Reminder', '_description': 'Remind Jasmine to water her plants', '_completed': False, '_deadline': '2025-10-01T00:00:00'}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}
+    event = Event.from_dict(json)
+
+    task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
+    expected = Event(task, 20, 15, 10, 25)
+
+    assert event == expected

@@ -53,7 +53,7 @@ class Routine(TemporalTask):
 
     def _get_routine_entry_by_title(self, key: str):
         for entry in self._tasks:
-            if (entry.task._title == key):
+            if (entry.task.title == key):
                 return entry
         raise ValueError(f"Task with title {key} not found!")
 
@@ -109,7 +109,7 @@ class Routine(TemporalTask):
 
     def remove_task_by_title(self, key: str):
         for index, entry in enumerate(self._tasks):
-            if (entry.task._title == key):
+            if (entry.task.title == key):
                 self._tasks.pop(index)
                 return
         raise ValueError("Task with given title not found!")

@@ -82,7 +82,7 @@ class Goal(TemporalTask):
         return obj
 
     def get_completion_status(self):
-        completed = self._completed
+        completed = self.completed
         for subgoal in self._subgoals.values():
             completed += subgoal.get_completion_status()
         return int(completed)
@@ -111,11 +111,11 @@ class Goal(TemporalTask):
     def set_completed(self):
         for subgoal in self._subgoals.values():
             subgoal.set_completed()
-        self._completed = True
+        self.completed = True
 
     def add_subgoal(self, goal: Task):
         self._check_time_period(goal)
-        self._subgoals[goal._title] = goal
+        self._subgoals[goal.title] = goal
 
     def remove_subgoal_by_index(self, key: int):
         self._check_index(key)

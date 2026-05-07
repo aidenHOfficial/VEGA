@@ -48,7 +48,7 @@ class Event:
         return hash(self.__str__())
     
     def __repr__(self):
-        return f"Event(title:{self._task._title}, description:{self._task._description})"
+        return f"Event(title:{self._task.title}, description:{self._task.description})"
 
     def _time_difference_to_now(self):
 
@@ -141,7 +141,7 @@ class Event:
         return self._task
     
     def get_deadline(self):
-        return self._task._deadline
+        return self._task.deadline
     
     def get_startline(self):
         if (isinstance(self._task, TemporalTask)):

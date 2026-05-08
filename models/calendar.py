@@ -2,7 +2,7 @@ from typing import List
 from collections import defaultdict
 from datetime import date, datetime 
 import bisect
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from models.task import Task
 from models.time_interval import TimeInterval
 from models.temporal_task import TemporalTask
@@ -12,15 +12,10 @@ from models.time_tree import TimeTree
 
 @dataclass
 class Calendar:
-    _time_tree: TimeTree
-    _todos: List[Event]
-    _dated_todos: List[Event]
-
-    def __init__(self):
-        self._time_tree = TimeTree()
-        self._dated_todos = []
-        self._todos = []
-
+    time_tree: TimeTree = field(default_factory=TimeTree)
+    todos: List[Event] = field(default_factory=list)
+    dated_todos: List[Event] = field(default_factory=list)
+    
     def _get_day_events(self, day: date):
         return self._get_events(TimeInterval(datetime(day.year, day.month, day.day), datetime(day.year, day.month, day.day, 23, 59, 59)))
 
@@ -31,13 +26,13 @@ class Calendar:
         return events
 
     def _get_events(self, TimeInterval: TimeInterval):
-        return self._time_tree.overlap_search(TimeInterval)
+        return self.time_tree.overlap_search(TimeInterval)
     
     def to_dict(self):
         return {
-            "_time_tree": self._time_tree.to_dict(),
-            "_dated_todos": [event.to_dict() for event in self._dated_todos],
-            "_todos": [event.to_dict() for event in self._todos]
+            "time_tree": self.time_tree.to_dict(),
+            "dated_todos": [event.to_dict() for event in self.dated_todos],
+            "todos": [event.to_dict() for event in self.todos]
         }
         
     @classmethod
@@ -47,9 +42,9 @@ class Calendar:
         
         obj = cls.__new__(cls)
 
-        obj._time_tree = TimeTree.from_dict(data["_time_tree"])
-        obj._dated_todos = [Event.from_dict(e) for e in data["_dated_todos"]]
-        obj._todos = [Event.from_dict(e) for e in data["_todos"]]
+        obj.time_tree = TimeTree.from_dict(data["time_tree"])
+        obj.dated_todos = [Event.from_dict(e) for e in data["dated_todos"]]
+        obj.todos = [Event.from_dict(e) for e in data["todos"]]
 
         return obj
     
@@ -57,15 +52,15 @@ class Calendar:
         new_event = Event(task, goal_value, routine_value, personal_value, relational_value)
         
         if isinstance(task, TemporalTask):
-            self._time_tree.insert(new_event)
+            self.time_tree.insert(new_event)
         elif isinstance(task, Task):
             if (task.deadline):
-                bisect.insort(self._dated_todos, new_event)
+                bisect.insort(self.dated_todos, new_event)
             else:
-                self._todos.append(new_event)
+                self.todos.append(new_event)
     
     def remove_event(self, event: Event):
-        self._time_tree.delete(event)
+        self.time_tree.delete(event)
     
     def generate_schedule(self, date: datetime):
         domains = defaultdict(set)
@@ -74,7 +69,7 @@ class Calendar:
         date_end = datetime(date.year, date.month, date.day, 23, 59, 59)
         date_time_interval = TimeInterval(date_start, date_end)
         
-        arcs = self._time_tree.sweepline_overlap_search(date_time_interval)
+        arcs = self.time_tree.sweepline_overlap_search(date_time_interval)
 
         for event, neighbor in arcs.keys():
             if event not in domains:

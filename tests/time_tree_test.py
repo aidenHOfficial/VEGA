@@ -8,24 +8,24 @@ from models.event import Event
 def test_insertion():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
     assert task_event, tree.search(TimeInterval(datetime(2025, 10, 1) == datetime(2025, 10, 2))).get_event("Test")
 
-    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", start_date=datetime(2025, 10, 3), end_date=datetime(2025, 10, 4))
     task_event2 = Event(temp_task2, 10, 20, 10, 25)
     tree.insert(task_event2)
 
-    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     tree.insert(task_event3)
 
     assert task_event3 == tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_event("Reminder")
     assert 2 ==  tree.search(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))).get_num_events()
 
-    temp_task4 = TemporalTask("Another", "Example text", datetime(2025, 10, 5), datetime(2025, 10, 6))
+    temp_task4 = TemporalTask("Another", "Example text", start_date=datetime(2025, 10, 5), end_date=datetime(2025, 10, 6))
     task_event4 = Event(temp_task4, 20, 15, 10, 25)
     tree.insert(task_event4)
 
@@ -34,7 +34,7 @@ def test_insertion():
 def test_insertion_multiple_schedule_intervals():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2), None, None, [TimeInterval(datetime(2025, 11, 1), datetime(2025, 11, 2)), TimeInterval(datetime(2025, 10, 5), datetime(2025, 10, 6))])
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2), startline=None, deadline=None, schedule_intervals=[TimeInterval(datetime(2025, 11, 1), datetime(2025, 11, 2)), TimeInterval(datetime(2025, 10, 5), datetime(2025, 10, 6))])
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
@@ -48,19 +48,19 @@ def test_get_size():
         
     assert 0 == tree.get_size()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
     assert 1 == tree.get_size()
 
-    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", start_date=datetime(2025, 10, 3), end_date=datetime(2025, 10, 4))
     task_event2 = Event(temp_task2, 10, 20, 10, 25)
     tree.insert(task_event2)
 
     assert 2 == tree.get_size()
 
-    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     tree.insert(task_event3)
 
@@ -77,15 +77,15 @@ def test_get_size():
 def test_delete():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
-    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", datetime(2025, 10, 3), datetime(2025, 10, 4))
+    temp_task2 = TemporalTask("Make bed", "Remember after waking up to go to bed", start_date=datetime(2025, 10, 3), end_date=datetime(2025, 10, 4))
     task_event2 = Event(temp_task2, 10, 20, 10, 25)
     tree.insert(task_event2)
 
-    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task3 = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2)) 
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     tree.insert(task_event3)
 
@@ -104,15 +104,15 @@ def test_delete():
 def test_overlap_search():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
-    temp_task2 = TemporalTask("Test", "Example text", datetime(2025, 10, 4), datetime(2025, 10, 6))
+    temp_task2 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 4), end_date=datetime(2025, 10, 6))
     task_event2 = Event(temp_task2, 20, 15, 10, 25)
     tree.insert(task_event2)
 
-    temp_task3 = TemporalTask("Test", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+    temp_task3 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 2), end_date=datetime(2025, 10, 4))
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     tree.insert(task_event3)
 
@@ -126,7 +126,7 @@ def test_overlap_search():
 def test_search():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
@@ -135,7 +135,7 @@ def test_search():
 def test_search_invalid():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
@@ -145,36 +145,36 @@ def test_search_invalid():
 def test_to_dict():
     tree = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     tree.insert(task_event)
 
-    temp_task2 = TemporalTask("Test", "Example text", datetime(2025, 10, 4), datetime(2025, 10, 6))
+    temp_task2 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 4), end_date=datetime(2025, 10, 6))
     task_event2 = Event(temp_task2, 20, 15, 10, 25)
     tree.insert(task_event2)
 
-    temp_task3 = TemporalTask("Test", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+    temp_task3 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 2), end_date=datetime(2025, 10, 4))
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     tree.insert(task_event3)
-
-    expected = {'_size': 3, '_root': {'key': {'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}, 'min': '2025-10-02T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 2, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-04T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T00:00:00', '_end_date': '2025-10-02T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}, 'right': {'key': {'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}, 'min': '2025-10-04T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-04T00:00:00', '_end_date': '2025-10-06T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}}}
+    
+    expected = {'size': 3, 'root': {'key': {'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}, 'min': '2025-10-02T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 2, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': None, 'right': None}, 'right': {'key': {'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}, 'min': '2025-10-04T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 1, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': None, 'right': None}}}
     assert expected == tree.to_dict()
     
 def test_from_dict():
-    json = {'_size': 3, '_root': {'key': {'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}, 'min': '2025-10-02T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 2, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-04T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T00:00:00', '_end_date': '2025-10-02T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}, 'right': {'key': {'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}, 'min': '2025-10-04T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 1, 'events': [{'_task': {'_type': 'TemporalTask', '_title': 'Test', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-04T00:00:00', '_end_date': '2025-10-06T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}]}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}], 'left': None, 'right': None}}}
+    json = {'size': 3, 'root': {'key': {'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}, 'min': '2025-10-02T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 2, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-04T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': {'key': {'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}, 'min': '2025-10-01T00:00:00', 'max': '2025-10-02T00:00:00', 'height': 1, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-01T00:00:00', 'end_date': '2025-10-02T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': None, 'right': None}, 'right': {'key': {'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}, 'min': '2025-10-04T00:00:00', 'max': '2025-10-06T00:00:00', 'height': 1, 'events': [{'task': {'type': 'TemporalTask', 'title': 'Test', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-04T00:00:00', 'end_date': '2025-10-06T00:00:00'}]}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}], 'left': None, 'right': None}}}
     tree = TimeTree.from_dict(json)
     
     expected = TimeTree()
         
-    temp_task = TemporalTask("Test", "Example text", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     task_event = Event(temp_task, 20, 15, 10, 25)
     expected.insert(task_event)
 
-    temp_task2 = TemporalTask("Test", "Example text", datetime(2025, 10, 4), datetime(2025, 10, 6))
+    temp_task2 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 4), end_date=datetime(2025, 10, 6))
     task_event2 = Event(temp_task2, 20, 15, 10, 25)
     expected.insert(task_event2)
 
-    temp_task3 = TemporalTask("Test", "Example text", datetime(2025, 10, 2), datetime(2025, 10, 4))
+    temp_task3 = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 2), end_date=datetime(2025, 10, 4))
     task_event3 = Event(temp_task3, 20, 15, 10, 25)
     expected.insert(task_event3)
     

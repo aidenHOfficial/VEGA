@@ -5,28 +5,28 @@ from models.task import Task
 from models.routine import Routine
 
 def test_add_task():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine(title="Routine", description="Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
 
-    temp_task = TemporalTask("Task A", "Example text", datetime(2025, 1, 1, 8), datetime(2025, 1, 1, 10))
+    temp_task = TemporalTask(title="Task A", description="Example text", start_date=datetime(2025, 1, 1, 8), end_date=datetime(2025, 1, 1, 10))
     routine.add_temporal_task(temp_task)
     exists = False
-    for entry in routine._tasks:
+    for entry in routine.tasks:
         if (entry.task == temp_task):
             exists = True
             break
     assert exists
 
-    non_temp_task = Task("Task B", "Example Text")
+    non_temp_task = Task(title="Task B", description="Example Text")
     routine.add_task(non_temp_task, timedelta(hours=1))
     exists = False
-    for entry in routine._tasks:
+    for entry in routine.tasks:
         if (entry.task == temp_task):
             exists = True
             break
     assert exists
 
 def test_add_task_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine(title="Routine", description="Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
     non_temp_task = Task("Task A", "No complete time provided")
 
     with pytest.raises(ValueError):
@@ -36,12 +36,12 @@ def test_add_task_invalid():
 
 def test_get_tasks():
     check_list = []
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 2))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 2))
 
     assert check_list == routine.get_tasks()
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 10))
     routine.add_temporal_task(task_B)
@@ -52,10 +52,10 @@ def test_get_tasks():
         assert item in check_list
 
 def test_get_task():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 10))
     routine.add_temporal_task(task_B)
@@ -66,7 +66,7 @@ def test_get_task():
     assert task_B, routine.get_task_by_title("Task B")
 
 def test_get_task_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
 
     with pytest.raises(IndexError):
         routine.get_task_by_index(0)
@@ -74,7 +74,7 @@ def test_get_task_invalid():
         routine.get_task_by_title("Anything")
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 10))
     routine.add_temporal_task(task_B)
@@ -87,10 +87,10 @@ def test_get_task_invalid():
         routine.get_task_by_title("Anything")
 
 def test_get_task_complete_time():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 10))
     routine.add_temporal_task(task_B)
@@ -101,7 +101,7 @@ def test_get_task_complete_time():
     assert task_B.get_total_time() == routine.get_task_complete_time_by_title("Task B")
 
 def test_get_task_complete_time_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1), datetime(2025, 1, 2))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))
 
     with pytest.raises(IndexError):
         routine.get_task_complete_time_by_index(0)
@@ -109,7 +109,7 @@ def test_get_task_complete_time_invalid():
         routine.get_task_complete_time_by_title("Anything")
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 1, 1, 2), datetime(2025, 1, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 1, 1, 2), end_date=datetime(2025, 1, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 10))
     routine.add_temporal_task(task_B)
@@ -122,13 +122,13 @@ def test_get_task_complete_time_invalid():
         routine.get_task_complete_time_by_title("Anything")
 
 def test_get_estimated_time():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     assert routine.get_estimated_time() == timedelta(0, 0)
     assert routine.total_estimated_time == timedelta(0, 0)
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -137,10 +137,10 @@ def test_get_estimated_time():
     assert routine.total_estimated_time == (timedelta(0, 0, 0, 0, 30, 0, 0) + (datetime(2025, 10, 1, 3) - datetime(2025, 10, 1, 2)))
 
 def test_remove_task():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -159,7 +159,7 @@ def test_remove_task():
         assert task != task_B
 
 def test_remove_task_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     with pytest.raises(IndexError):
         routine.remove_task_by_index(0)
@@ -167,7 +167,7 @@ def test_remove_task_invalid():
         routine.remove_task_by_title("asdf")
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -180,10 +180,10 @@ def test_remove_task_invalid():
         routine.remove_task_by_index(-1)
 
 def test_change_order():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -194,10 +194,10 @@ def test_change_order():
     assert reorder == routine.get_tasks()
         
 def test_change_order_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -214,10 +214,10 @@ def test_change_order_invalid():
         routine.change_order(reorder)
 
 def test_change_task_complete_time():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -230,7 +230,7 @@ def test_change_task_complete_time():
     assert timedelta(0, 0, 0, 0, 30, 0, 0) == routine.get_task_complete_time_by_title("Task A")
         
 def test_change_task_complete_time_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     with pytest.raises(IndexError):
         routine.change_task_complete_time_by_index(0, timedelta(0, 0, 0, 0, 15, 0, 0))
@@ -238,7 +238,7 @@ def test_change_task_complete_time_invalid():
         routine.change_task_complete_time_by_title("asdf", timedelta(0, 0, 0, 0, 15, 0, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
@@ -253,25 +253,25 @@ def test_change_task_complete_time_invalid():
         routine.change_task_complete_time_by_index(-1, timedelta(0, 0, 0, 0, 30, 0, 0))
 
 def test_get_next_time_slot():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     assert datetime(2025, 1, 1, 2, 0) + timedelta(1), datetime(2025, 1, 1, 3, 0) + timedelta(1) == routine.get_next_time_slot(1)
     assert datetime(2025, 1, 1, 2, 0) + timedelta(2), datetime(2025, 1, 1, 3, 0) + timedelta(2) == routine.get_next_time_slot(2)
 
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0), timedelta(0, 0, 0, 0, 0, 0, 1))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0), repeated_time_difference=timedelta(0, 0, 0, 0, 0, 0, 1))
 
     assert datetime(2025, 1, 1, 2, 0) + timedelta(0, 0, 0, 0, 0, 0, 1), datetime(2025, 1, 1, 3, 0) + timedelta(0, 0, 0, 0, 0, 0, 1) == routine.get_next_time_slot(1)
     assert datetime(2025, 1, 1, 2, 0) + timedelta(0, 0, 0, 0, 0, 0, 2), datetime(2025, 1, 1, 3, 0) + timedelta(0, 0, 0, 0, 0, 0, 2) == routine.get_next_time_slot(2)
 
 def test_get_next_time_slot_invalid():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     with pytest.raises(ValueError):
         routine.get_next_time_slot(0)
     with pytest.raises(ValueError):
         routine.get_next_time_slot(-1)
 
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0), timedelta(0, 0, 0, 0, 0, 0, 1))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0), repeated_time_difference=timedelta(0, 0, 0, 0, 0, 0, 1))
 
     with pytest.raises(ValueError):
         routine.get_next_time_slot(0)
@@ -279,26 +279,26 @@ def test_get_next_time_slot_invalid():
         routine.get_next_time_slot(-1)
 
 def test_to_dict():
-    routine = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    routine = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     routine.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     routine.add_temporal_task(task_B)
     
-    expected = {'_type': 'Routine', '_title': 'Routine', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-01-01T02:00:00', '_end_date': '2025-01-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00'}], '_repeated_time_difference': 86400.0, '_tasks': [{'task': {'_type': 'Task', '_title': 'Task A', '_description': 'Example text', '_completed': False, '_deadline': None}, 'duration': 1800.0}, {'task': {'_type': 'TemporalTask', '_title': 'Task B', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-10-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 'duration': 3600.0}]}
+    expected = {'type': 'Routine', 'title': 'Routine', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00'}], 'repeated_time_difference': 0.0, 'tasks': [{'task': {'type': 'Task', 'title': 'Task A', 'description': 'Example text', 'completed': False, 'deadline': None}, 'duration': 1800.0}, {'task': {'type': 'TemporalTask', 'title': 'Task B', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 'duration': 3600.0}]}
 
     assert routine.to_dict() == expected
 
 def test_from_dict():
-    json = {'_type': 'Routine', '_title': 'Routine', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-01-01T02:00:00', '_end_date': '2025-01-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00'}], '_repeated_time_difference': 86400.0, '_tasks': [{'task': {'_type': 'Task', '_title': 'Task A', '_description': 'Example text', '_completed': False, '_deadline': None}, 'duration': 1800.0}, {'task': {'_type': 'TemporalTask', '_title': 'Task B', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-10-01T03:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 'duration': 3600.0}]}
+    json = {'type': 'Routine', 'title': 'Routine', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-01-01T02:00:00', 'end_date': '2025-01-01T03:00:00'}], 'repeated_time_difference': 0.0, 'tasks': [{'task': {'type': 'Task', 'title': 'Task A', 'description': 'Example text', 'completed': False, 'deadline': None}, 'duration': 1800.0}, {'task': {'type': 'TemporalTask', 'title': 'Task B', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-10-01T03:00:00'}]}, 'duration': 3600.0}]}
     routine = Routine.from_dict(json)
 
-    expected = Routine("Routine", "Example text", datetime(2025, 1, 1, 2, 0), datetime(2025, 1, 1, 3, 0))
+    expected = Routine("Routine", "Example text", start_date=datetime(2025, 1, 1, 2, 0), end_date=datetime(2025, 1, 1, 3, 0))
 
     task_A = Task("Task A", "Example text")
-    task_B = TemporalTask("Task B", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 10, 1, 3))
+    task_B = TemporalTask("Task B", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 10, 1, 3))
 
     expected.add_task(task_A, timedelta(0, 0, 0, 0, 30, 0, 0))
     expected.add_temporal_task(task_B)

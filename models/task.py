@@ -1,9 +1,10 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
+from uuid import UUID, uuid4
 
-@dataclass
+@dataclass(eq=True)
 class Task:
     title: str
     description: str
@@ -17,8 +18,8 @@ class Task:
         return subclass
 
     def __hash__(self):
-        return hash(self.__str__())
-
+        return hash((self.title, self.description, self.completed, self.deadline))
+    
     def to_dict(self):
         return {
             "type": self.__class__.__name__,

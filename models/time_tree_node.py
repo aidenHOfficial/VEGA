@@ -1,19 +1,19 @@
 from __future__ import annotations
 from typing import List
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from models.event import Event
 from models.time_interval import TimeInterval
 
 @dataclass
 class TimeTreeNode:
-    events: List[Event]
-    key: TimeInterval
-    max: datetime
-    min: datetime
-    left: TimeTreeNode
-    right: TimeTreeNode
-    height: int
+    events: List[Event] = field(default_factory=List)
+    key: TimeInterval = None
+    max: datetime = None
+    min: datetime = None
+    left: TimeTreeNode = None
+    right: TimeTreeNode = None
+    height: int = 0 
     
     def __init__(self, event: Event, key: TimeInterval):
         self.events = [event]
@@ -68,7 +68,7 @@ class TimeTreeNode:
             return
         if (isinstance(key, str)):
             for index, event in enumerate(self.events):
-                if (event._task.title == key):
+                if (event.task.title == key):
                     del self.events[index]
                     return
             raise ValueError("Event with given title not found!")
@@ -84,7 +84,7 @@ class TimeTreeNode:
             return self.events[key]
         if (isinstance(key, str)):
             for event in self.events:
-                if (event._task.title == key):
+                if (event.task.title == key):
                     return event
             raise ValueError("Event with given title not found!")
         raise TypeError("key must be int or string!")

@@ -5,22 +5,12 @@ from dataclasses import dataclass, field
 from models.task import Task
 from models.temporal_task import TemporalTask
 
+@dataclass
 @Task.register
 class Goal(TemporalTask):
-    _subgoals: Dict[str, Task] = field(default_factory=dict)
-    _completed_steps: int = 0
+    subgoals: Dict[str, Task] = field(default_factory=dict)
+    completed_steps: int = 0
     
-    def __init__(self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None):
-        super().__init__(title=title,
-                         description=description,
-                         start_date=start_date,
-                         end_date=end_date,
-                         startline=startline,
-                         deadline=deadline)
-
-        self._subgoals = {}
-        self._completed_steps = 0
-
     def __str__(self):
         return self._build_tree_str(self)
 
@@ -31,27 +21,27 @@ class Goal(TemporalTask):
         new_prefix = prefix + ("    " if is_last else "│   ")
         
         if (isinstance(node, Goal)):
-            child_count = len(node._subgoals)
+            child_count = len(node.subgoals)
 
-            for i, child in enumerate(node._subgoals.values()):
+            for i, child in enumerate(node.subgoals.values()):
                 is_last_child = (i == child_count - 1)
                 lines.append(self._build_tree_str(child, new_prefix, is_last_child))
 
         return "\n".join(lines)
 
     def _check_index(self, index: int):
-        if index is None or index < 0 or index >= len(self._subgoals):
+        if index is None or index < 0 or index >= len(self.subgoals):
             raise IndexError("Invalid subgoal index")
     
     def _check_time_period(self, goal: Task):
         if (
-            (goal.get_deadline() and goal.get_deadline() > self._deadline) or
+            (goal.get_deadline() and goal.get_deadline() > self.deadline) or
             (
                 isinstance(goal, TemporalTask) and
                 (
-                    (goal.get_startline() and goal.get_startline() < self._startline) or
-                    (goal.get_start_date() < self._start_date) or 
-                    (goal.get_end_date() > self._end_date)
+                    (goal.get_startline() and goal.get_startline() < self.startline) or
+                    (goal.get_start_date() < self.start_date) or 
+                    (goal.get_end_date() > self.end_date)
                 )
             )
         ):
@@ -62,8 +52,8 @@ class Goal(TemporalTask):
     def to_dict(self):
         return {
             **super().to_dict(),
-            "_completed_steps": self._completed_steps,
-            "_subgoals": [subgoal.to_dict() for subgoal in self._subgoals.values()],
+            "completed_steps": self.completed_steps,
+            "subgoals": [subgoal.to_dict() for subgoal in self.subgoals.values()],
         }
         
     @classmethod
@@ -73,66 +63,66 @@ class Goal(TemporalTask):
         
         obj = super()._from_dict(data)
 
-        obj._completed_steps = int(data["_completed_steps"])
-        obj._subgoals = {
-            sub["_title"]: Task.from_dict(sub)
-            for sub in data["_subgoals"]
+        obj.completed_steps = int(data["completed_steps"])
+        obj.subgoals = {
+            sub["title"]: Task.from_dict(sub)
+            for sub in data["subgoals"]
         }
 
         return obj
 
     def get_completion_status(self):
         completed = self.completed
-        for subgoal in self._subgoals.values():
+        for subgoal in self.subgoals.values():
             completed += subgoal.get_completion_status()
         return int(completed)
 
     def get_num_subgoals(self):
-        count = len(self._subgoals)
-        for subgoal in self._subgoals.values():
+        count = len(self.subgoals)
+        for subgoal in self.subgoals.values():
             if (isinstance(subgoal, Goal)):
                 count += subgoal.get_num_subgoals()
         return count
 
     def get_subgoal_by_index(self, key: int):
         self._check_index(key)
-        values = list(self._subgoals.values())
+        values = list(self.subgoals.values())
         self._check_index(key)
         return values[key]
 
     def get_subgoal_by_title(self, key: str):
-        if key in self._subgoals:
-            return self._subgoals[key]
+        if key in self.subgoals:
+            return self.subgoals[key]
         raise ValueError(f"Goal with title: {key} not found")
 
     def get_subgoals(self):
-        return list(self._subgoals.values())
+        return list(self.subgoals.values())
 
     def set_completed(self):
-        for subgoal in self._subgoals.values():
+        for subgoal in self.subgoals.values():
             subgoal.set_completed()
         self.completed = True
 
     def add_subgoal(self, goal: Task):
         self._check_time_period(goal)
-        self._subgoals[goal.title] = goal
+        self.subgoals[goal.title] = goal
 
     def remove_subgoal_by_index(self, key: int):
         self._check_index(key)
-        del list(self._subgoals.values())[key]
+        del list(self.subgoals.values())[key]
 
     def remove_subgoal_by_title(self, key: str):
-        if (key not in self._subgoals):
+        if (key not in self.subgoals):
             raise ValueError(f"Goal with title: {key} not found")
-        self._subgoals.pop(key)
+        self.subgoals.pop(key)
 
     def complete_subgoal_by_index(self, key: int):
         self._check_index(key)
-        list(self._subgoals.values())[int(key)].set_completed()
+        list(self.subgoals.values())[int(key)].set_completed()
 
     def complete_subgoal_by_title(self, key: str):
-        if (key in self._subgoals):
-            self._subgoals[key].set_completed()
+        if (key in self.subgoals):
+            self.subgoals[key].set_completed()
             return
         raise ValueError(f"Goal with title: ({key}) not found")
 
@@ -140,6 +130,6 @@ class Goal(TemporalTask):
         return f"{self.get_completion_status()}/{self.get_num_subgoals()}"
 
     def get_progress_percent(self):
-        if not self._subgoals:
+        if not self.subgoals:
             return 100.0
         return (self.get_completion_status() / self.get_num_subgoals()) * 100

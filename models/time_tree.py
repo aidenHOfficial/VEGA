@@ -8,17 +8,17 @@ from models.temporal_task import TemporalTask
 
 @dataclass
 class TimeTree:  
-    _root: TimeTreeNode
-    _size: int
+    root: TimeTreeNode
+    size: int
 
     def __init__(self):
-        self._root = None
-        self._size = 0
+        self.root = None
+        self.size = 0
     
     def to_dict(self):
         return {
-            "_root": self._root.to_dict(),
-            "_size": self._size
+            "root": self.root.to_dict(),
+            "size": self.size
         }
         
     @classmethod
@@ -28,8 +28,8 @@ class TimeTree:
         
         obj = cls.__new__(cls)
 
-        obj._root = TimeTreeNode.from_dict(data["_root"])
-        obj._size = int(data["_size"])
+        obj.root = TimeTreeNode.from_dict(data["root"])
+        obj.size = int(data["size"])
 
         return obj
 
@@ -100,9 +100,9 @@ class TimeTree:
     def _insert_recursive(self, node: TimeTreeNode, event: Event, key: TimeInterval):
         if node is None:
             new_node = self._new_node(event, key)
-            if (self._root is None):
-                self._root = new_node
-            self._size += 1
+            if (self.root is None):
+                self.root = new_node
+            self.size += 1
             return new_node
         
         if (key < node.key):
@@ -164,7 +164,7 @@ class TimeTree:
                     node.events = temp.events
                     node.right = self._delete_node_recursive(node.right, event, temp.key)
                 
-                self._size -= 1
+                self.size -= 1
 
         if node is None:
             return node
@@ -221,28 +221,28 @@ class TimeTree:
 
     def to_dict(self):
         return {
-            "_size": self._size,
-            "_root": self._root.to_dict()
+            "size": self.size,
+            "root": self.root.to_dict()
             #The nodes will all be present because the to_dict() function of the nodes is dfs
         }
 
     def get_size(self):
-        return self._size
+        return self.size
 
     def insert(self, event: Event):
         if (not isinstance(event.get_task(), TemporalTask)):
             raise ValueError("Event task must be a TemporalTask to be inserted into TimeTree")
         for time_interval in event.schedule_intervals:
-            self._root = self._insert_recursive(self._root, event, time_interval)
+            self.root = self._insert_recursive(self.root, event, time_interval)
 
     def delete(self, event: Event):
         if (not isinstance(event.get_task(), TemporalTask)):
             raise ValueError("The only events in the tree are those with TemporalTask tasks")
         for time_interval in event.schedule_intervals:
-            self._root = self._delete_node_recursive(self._root, event, time_interval)
+            self.root = self._delete_node_recursive(self.root, event, time_interval)
 
     def search(self, key: TimeInterval):
-        current = self._root
+        current = self.root
         while current is not None:
             if key == current.key:
                 return current
@@ -253,20 +253,20 @@ class TimeTree:
         raise ValueError("Key not found in tree")
 
     def overlap_search(self, interval: TimeInterval):
-        if self._root is None:
+        if self.root is None:
             return None
         overlaps = []
-        self._overlap_search_recursive(self._root, interval, overlaps)
+        self._overlap_search_recursive(self.root, interval, overlaps)
 
         return overlaps
 
     def sweepline_overlap_search(self, interval):
         """Finds all overlapping events within a given interval."""
-        if not self._root:
+        if not self.root:
             return {}
     
         overlapping_events = []
-        self._overlap_search_recursive(self._root, interval, overlapping_events)
+        self._overlap_search_recursive(self.root, interval, overlapping_events)
     
         points = []
         for e in overlapping_events:
@@ -299,7 +299,7 @@ class TimeTree:
         return overlaps  
     
     def inorder(self):
-        return self._inorder_recursive(self._root)
+        return self._inorder_recursive(self.root)
 
     def print_tree(self):
-        self._print_tree_recursive(self._root, "", True)
+        self._print_tree_recursive(self.root, "", True)

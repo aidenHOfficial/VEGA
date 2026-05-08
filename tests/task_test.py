@@ -45,13 +45,7 @@ def test_get_deadline_with_no_deadline():
 
 def test_to_dict():
     task = Task(title="test", description="this is a test task")
-    expected = {
-        "type": "Task",
-        "title": "test",
-        "description": "this is a test task",
-        "completed": False,
-        "deadline": None
-    }
+    expected = {'type': 'Task', 'title': 'test', 'description': 'this is a test task', 'completed': False, 'deadline': None}
 
     print(task.to_dict())
 

@@ -13,23 +13,12 @@ class TemporalTask(Task):
     startline: Optional[datetime] = None
     schedule_intervals: Optional[List[TimeInterval]] = field(default_factory=list)
 
-    # def __init__( self, title: str, description: str, start_date: datetime, end_date: datetime, startline: Optional[datetime] = None, deadline: Optional[datetime] = None, schedule_intervals: Optional[List[TimeInterval]] = None): 
-    #     super().__init__(title, description, deadline) 
-    #     self._start_date = start_date 
-    #     self._end_date = end_date 
-    #     self._startline = startline 
-    #     self._schedule_intervals = [] 
-
-    #     if (schedule_intervals is not None): 
-    #         for interval in schedule_intervals: self.add_schedule_interval(interval) 
-
-    #     self.add_schedule_interval(TimeInterval(start_date, end_date)) 
-    #     self.__post_init__()
-
     def __post_init__(self):
-        self.schedule_intervals.append(
-            TimeInterval(self.start_date, self.end_date)
-        )
+        #TODO: This might be incorrect. It might not always be best to merge schedule intervals.
+        if (self.schedule_intervals is not None):
+            for interval in self.schedule_intervals:
+                self.add_schedule_interval(interval)
+            self.add_schedule_interval(TimeInterval(self.start_date, self.end_date))
 
         if self.startline and self.start_date < self.startline:
             raise ValueError("start_date must not be before startline.")
@@ -53,7 +42,9 @@ class TemporalTask(Task):
             ):
                 raise ValueError("All reschedule periods must be within startline and deadline.")
 
-
+    def __hash__(self):
+        return hash((self.title, self.description, self.completed, self.start_date, self.end_date, self.deadline))
+    
     def to_dict(self):
         return {
             **super().to_dict(),

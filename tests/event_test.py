@@ -7,7 +7,7 @@ from models.event import Event
 
 def test_get_priority_score_simple():
     task = Task("Make bed", "Remember after waking up to go to bed")
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime.now() + timedelta(0, 0, 0, 0, 5), datetime.now() + timedelta(0, 0, 0, 0, 10))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime.now() + timedelta(0, 0, 0, 0, 5), end_date=datetime.now() + timedelta(0, 0, 0, 0, 10))
 
     task_event = Event(task, 10, 20, 10, 0)
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
@@ -18,8 +18,8 @@ def test_get_priority_score_simple():
     assert temporal_task_event_priority > task_event_priority
 
 def test_get_priority_score_closer_deadline_results_in_higher_score():
-    temp_task = TemporalTask("Reminder", "Test", datetime.now() + timedelta(0, 0, 0, 0, 5), datetime.now() + timedelta(0, 0, 0, 0, 10))
-    temp_task_2 = TemporalTask("Reminder2", "Test2", datetime.now() + timedelta(0, 0, 0, 0, 10), datetime.now() + timedelta(0, 0, 0, 0, 15))
+    temp_task = TemporalTask("Reminder", "Test", start_date=datetime.now() + timedelta(0, 0, 0, 0, 5), end_date=datetime.now() + timedelta(0, 0, 0, 0, 10))
+    temp_task_2 = TemporalTask("Reminder2", "Test2", start_date=datetime.now() + timedelta(0, 0, 0, 0, 10), end_date=datetime.now() + timedelta(0, 0, 0, 0, 15))
 
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
     temp_task_event_2 = Event(temp_task_2, 20, 15, 10, 25)
@@ -31,7 +31,7 @@ def test_get_priority_score_closer_deadline_results_in_higher_score():
 
 def test_get_task():
     task = Task("Make bed", "Remember after waking up to go to bed")
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime.now() + timedelta(0, 0, 0, 0, 5), datetime.now() + timedelta(0, 0, 0, 0, 10))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime.now() + timedelta(0, 0, 0, 0, 5), end_date=datetime.now() + timedelta(0, 0, 0, 0, 10))
 
     task_event = Event(task, 10, 20, 10, 0)
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
@@ -41,7 +41,7 @@ def test_get_task():
 
 def test_get_deadline():
     task = Task("Make bed", "Remember after waking up to go to bed")
-    task_2 = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
+    task_2 = Task("Reminder", "Remind Jasmine to water her plants", deadline=datetime(2025, 10, 1))
 
     task_event = Event(task, 10, 20, 10, 0)
     temp_task_event = Event(task_2, 20, 15, 10, 25)
@@ -50,8 +50,8 @@ def test_get_deadline():
     assert temp_task_event.get_deadline() == datetime(2025, 10, 1)
 
 def test_get_startline():
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
-    temp_task_2 = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2), datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
+    temp_task_2 = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2), startline=datetime(2025, 10, 1), deadline=datetime(2025, 10, 2))
 
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
     temp_task_event_2 = Event(temp_task_2, 20, 15, 10, 25)
@@ -60,14 +60,14 @@ def test_get_startline():
     assert temp_task_event_2.get_startline() == datetime(2025, 10, 1)
 
 def test_get_startline_invalid():
-    task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
+    task = Task("Reminder", "Remind Jasmine to water her plants", deadline=datetime(2025, 10, 1))
     task_event = Event(task, 20, 15, 10, 25)
 
     with pytest.raises(ValueError):
         task_event.get_startline()
 
 def test_get_start_date():
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
 
     assert temp_task_event.get_start_date() == datetime(2025, 10, 1)
@@ -80,7 +80,7 @@ def test_get_start_date_invalid():
         task_event.get_start_date()
 
 def test_get_end_date():
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
 
     assert temp_task_event.get_end_date() == datetime(2025, 10, 2)
@@ -93,7 +93,7 @@ def test_get_end_date_invalid():
         task_event.get_end_date()
 
 def test_get_time_slot():
-    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1), datetime(2025, 10, 2))
+    temp_task = TemporalTask("Reminder", "Remind Jasmine to water her plants", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))
     temp_task_event = Event(temp_task, 20, 15, 10, 25)
 
     assert temp_task_event.get_time_slot() == TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))
@@ -106,17 +106,18 @@ def test_get_time_slot_invalid():
         task_event.get_time_slot()
 
 def test_get_dict():
-    task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
+    task = Task("Reminder", "Remind Jasmine to water her plants", deadline=datetime(2025, 10, 1))
     task_event = Event(task, 20, 15, 10, 25)
-    expected = {'_task': {'_type': 'Task', '_title': 'Reminder', '_description': 'Remind Jasmine to water her plants', '_completed': False, '_deadline': '2025-10-01T00:00:00'}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}
-
+    
+    expected = {'task': {'type': 'Task', 'title': 'Reminder', 'description': 'Remind Jasmine to water her plants', 'completed': False, 'deadline': '2025-10-01T00:00:00'}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}
+    
     assert task_event.to_dict() == expected
 
 def test_from_dict():
-    json = {'_task': {'_type': 'Task', '_title': 'Reminder', '_description': 'Remind Jasmine to water her plants', '_completed': False, '_deadline': '2025-10-01T00:00:00'}, '_goal_value': 20, '_routine_value': 15, '_personal_value': 10, '_relational_value': 25}
+    json = {'task': {'type': 'Task', 'title': 'Reminder', 'description': 'Remind Jasmine to water her plants', 'completed': False, 'deadline': '2025-10-01T00:00:00'}, 'goal_value': 20, 'routine_value': 15, 'personal_value': 10, 'relational_value': 25}
     event = Event.from_dict(json)
 
-    task = Task("Reminder", "Remind Jasmine to water her plants", datetime(2025, 10, 1))
+    task = Task("Reminder", "Remind Jasmine to water her plants", deadline=datetime(2025, 10, 1))
     expected = Event(task, 20, 15, 10, 25)
 
     assert event == expected

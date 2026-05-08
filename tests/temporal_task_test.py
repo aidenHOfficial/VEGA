@@ -75,12 +75,12 @@ def test_add_schedule_interval_invalid_values():
 def test_to_dict():
     task = TemporalTask(title="test", description="this is a test task", start_date=datetime(2025, 10, 2), end_date=datetime(2025, 10, 10), startline=datetime(2025, 10, 2), deadline=datetime(2025, 10, 10))
     
-    expected = {'_type': 'TemporalTask', '_title': 'test', '_description': 'this is a test task', '_completed': False, '_deadline': '2025-10-10T00:00:00', '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-10T00:00:00', '_startline': '2025-10-02T00:00:00', '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
+    expected = {'type': 'TemporalTask', 'title': 'test', 'description': 'this is a test task', 'completed': False, 'deadline': '2025-10-10T00:00:00', 'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00', 'startline': '2025-10-02T00:00:00', 'schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
 
     assert task.to_dict() == expected
 
 def test_from_dict():
-    json = {'_type': 'TemporalTask', '_title': 'test', '_description': 'this is a test task', '_completed': False, '_deadline': '2025-10-10T00:00:00', '_start_date': '2025-10-02T00:00:00', '_end_date': '2025-10-10T00:00:00', '_startline': '2025-10-02T00:00:00', '_schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
+    json = {'type': 'TemporalTask', 'title': 'test', 'description': 'this is a test task', 'completed': False, 'deadline': '2025-10-10T00:00:00', 'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00', 'startline': '2025-10-02T00:00:00', 'schedule_intervals': [{'start_date': '2025-10-02T00:00:00', 'end_date': '2025-10-10T00:00:00'}]}
     task = TemporalTask.from_dict(json)
 
     expected = TemporalTask(title="test", description="this is a test task", start_date=datetime(2025, 10, 2), end_date=datetime(2025, 10, 10), startline=datetime(2025, 10, 2), deadline=datetime(2025, 10, 10))

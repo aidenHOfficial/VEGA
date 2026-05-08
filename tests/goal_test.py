@@ -6,17 +6,17 @@ from models.goal import Goal
 
 @pytest.fixture
 def dummy_goal():
-    goal = Goal("Root Goal", "Example text", datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3), datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3))
+    goal = Goal("Root Goal", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 10, 1, 3), startline=datetime(2025, 10, 1, 2), deadline=datetime(2026, 10, 1, 3))
         
-    task = Task("Task", "Example text", datetime(2026, 5, 1))
-    temp_task = TemporalTask("Dummy Temporal Task", "Example text", datetime(2025, 10, 10), datetime(2025, 10, 17))
+    task = Task("Task", "Example text", deadline=datetime(2026, 5, 1))
+    temp_task = TemporalTask("Dummy Temporal Task", "Example text", start_date=datetime(2025, 10, 10), end_date=datetime(2025, 10, 17))
         
-    sub_goal_A = Goal("Subgoal A", "Example text", datetime(2025, 10, 1, 2), datetime(2026, 3, 30), datetime(2025, 10, 1, 2), datetime(2026, 3, 30))
-    sub_goal_AA = Goal("Subgoal AA", "Example text", datetime(2025, 10, 1, 2), datetime(2025, 12, 30), datetime(2025, 10, 1, 2), datetime(2025, 12, 30))
+    sub_goal_A = Goal("Subgoal A", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 3, 30), startline=datetime(2025, 10, 1, 2), deadline=datetime(2026, 3, 30))
+    sub_goal_AA = Goal("Subgoal AA", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2025, 12, 30), startline=datetime(2025, 10, 1, 2), deadline=datetime(2025, 12, 30))
         
-    sub_goal_B = Goal("Subgoal B", "Example text", datetime(2026, 3, 30), datetime(2026, 10, 1, 2), datetime(2026, 3, 30), datetime(2026, 10, 1, 2))
-    sub_goal_BA = Goal("Subgoal BA", "Example text", datetime(2026, 3, 30), datetime(2026, 5, 1), datetime(2026, 3, 30), datetime(2026, 5, 1))
-    sub_goal_BB = Goal("Subgoal BB", "Example text", datetime(2026, 5, 1), datetime(2026, 10, 1), datetime(2026, 5, 1), datetime(2026, 10, 1))
+    sub_goal_B = Goal("Subgoal B", "Example text", start_date=datetime(2026, 3, 30), end_date=datetime(2026, 10, 1, 2), startline=datetime(2026, 3, 30), deadline=datetime(2026, 10, 1, 2))
+    sub_goal_BA = Goal("Subgoal BA", "Example text", start_date=datetime(2026, 3, 30), end_date=datetime(2026, 5, 1), startline=datetime(2026, 3, 30), deadline=datetime(2026, 5, 1))
+    sub_goal_BB = Goal("Subgoal BB", "Example text", start_date=datetime(2026, 5, 1), end_date=datetime(2026, 10, 1), startline=datetime(2026, 5, 1), deadline=datetime(2026, 10, 1))
         
     sub_goal_A.add_subgoal(sub_goal_AA)
         
@@ -32,28 +32,28 @@ def dummy_goal():
 
 def test_add_subgoal(dummy_goal: Goal):
     sub_goal_A = dummy_goal.get_subgoal_by_title("Subgoal A")
-    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", datetime(2025, 10, 1, 2), datetime(2026, 3, 30))
+    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 3, 30))
     sub_goal_A.add_subgoal(sub_goal_AB)
         
     assert sub_goal_AB, dummy_goal.get_subgoal("Subgoal A").get_subgoal("Subgoal AB")
        
 def test_add_subgoal_invalid(dummy_goal: Goal):
     sub_goal_A = dummy_goal.get_subgoal_by_title("Subgoal A")
-    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", datetime(2024, 10, 1), datetime(2026, 3, 30))
+    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", start_date=datetime(2024, 10, 1), end_date=datetime(2026, 3, 30))
         
     with pytest.raises(ValueError):
         sub_goal_A.add_subgoal(sub_goal_AB)
             
-    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", datetime(2025, 10, 1), datetime(2027, 3, 30))
+    sub_goal_AB = Goal("Subgoal AB", "this is a dummy goal", start_date=datetime(2025, 10, 1), end_date=datetime(2027, 3, 30))
         
     with pytest.raises(ValueError):
         sub_goal_A.add_subgoal(sub_goal_AB)
 
 def test_get_completion_status():
-    goal = Goal("Root Goal", "Example text", datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3), datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3))
+    goal = Goal("Root Goal", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 10, 1, 3), startline=datetime(2025, 10, 1, 2), deadline=datetime(2026, 10, 1, 3))
     assert goal.get_completion_status() == 0
         
-    sub_goal_A = Goal("Subgoal A", "Example text", datetime(2025, 10, 1, 2), datetime(2026, 3, 30), datetime(2025, 10, 1, 2), datetime(2026, 3, 30))
+    sub_goal_A = Goal("Subgoal A", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 3, 30), startline=datetime(2025, 10, 1, 2), deadline=datetime(2026, 3, 30))
     goal.add_subgoal(sub_goal_A)
     assert goal.get_completion_status() == 0
         
@@ -165,7 +165,7 @@ def test_complete_subgoal_invalid_inputs():
         goal.remove_subgoal_by_index(100)
         
 def test_get_progress_fraction(dummy_goal: Goal):
-    goal = Goal("Root Goal", "Example text", datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3), datetime(2025, 10, 1, 2), datetime(2026, 10, 1, 3))
+    goal = Goal("Root Goal", "Example text", start_date=datetime(2025, 10, 1, 2), end_date=datetime(2026, 10, 1, 3), startline=datetime(2025, 10, 1, 2), deadline=datetime(2026, 10, 1, 3))
     assert "0/0" == goal.get_progress_fraction()
         
     dummy_goal.complete_subgoal_by_title("Subgoal A")
@@ -179,12 +179,12 @@ def test_get_progress_percent(dummy_goal: Goal):
     assert 28.57142857142857 == dummy_goal.get_progress_percent()
 
 def test_to_dict(dummy_goal: Goal):
-    expected = {'_type': 'Goal', '_title': 'Root Goal', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T03:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2026-10-01T03:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'TemporalTask', '_title': 'Dummy Temporal Task', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-10T00:00:00', '_end_date': '2025-10-17T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00'}]}, {'_type': 'Goal', '_title': 'Subgoal A', '_description': 'Example text', '_completed': False, '_deadline': '2026-03-30T00:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2026-03-30T00:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'Goal', '_title': 'Subgoal AA', '_description': 'Example text', '_completed': False, '_deadline': '2025-12-30T00:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-12-30T00:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00'}], '_completed_steps': 0, '_subgoals': []}]}, {'_type': 'Goal', '_title': 'Subgoal B', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T02:00:00', '_start_date': '2026-03-30T00:00:00', '_end_date': '2026-10-01T02:00:00', '_startline': '2026-03-30T00:00:00', '_schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'Goal', '_title': 'Subgoal BA', '_description': 'Example text', '_completed': False, '_deadline': '2026-05-01T00:00:00', '_start_date': '2026-03-30T00:00:00', '_end_date': '2026-05-01T00:00:00', '_startline': '2026-03-30T00:00:00', '_schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00'}], '_completed_steps': 0, '_subgoals': []}, {'_type': 'Goal', '_title': 'Subgoal BB', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T00:00:00', '_start_date': '2026-05-01T00:00:00', '_end_date': '2026-10-01T00:00:00', '_startline': '2026-05-01T00:00:00', '_schedule_intervals': [{'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00'}], '_completed_steps': 0, '_subgoals': []}, {'_type': 'Task', '_title': 'Task', '_description': 'Example text', '_completed': False, '_deadline': '2026-05-01T00:00:00'}]}]}
+    expected = {'type': 'Goal', 'title': 'Root Goal', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T03:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'TemporalTask', 'title': 'Dummy Temporal Task', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00'}]}, {'type': 'Goal', 'title': 'Subgoal A', 'description': 'Example text', 'completed': False, 'deadline': '2026-03-30T00:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'Goal', 'title': 'Subgoal AA', 'description': 'Example text', 'completed': False, 'deadline': '2025-12-30T00:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00'}], 'completed_steps': 0, 'subgoals': []}]}, {'type': 'Goal', 'title': 'Subgoal B', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T02:00:00', 'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00', 'startline': '2026-03-30T00:00:00', 'schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'Goal', 'title': 'Subgoal BA', 'description': 'Example text', 'completed': False, 'deadline': '2026-05-01T00:00:00', 'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00', 'startline': '2026-03-30T00:00:00', 'schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00'}], 'completed_steps': 0, 'subgoals': []}, {'type': 'Goal', 'title': 'Subgoal BB', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T00:00:00', 'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00', 'startline': '2026-05-01T00:00:00', 'schedule_intervals': [{'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00'}], 'completed_steps': 0, 'subgoals': []}, {'type': 'Task', 'title': 'Task', 'description': 'Example text', 'completed': False, 'deadline': '2026-05-01T00:00:00'}]}]}
     
     assert expected == dummy_goal.to_dict()
     
 def test_from_dict(dummy_goal: Goal):
-    json = {'_type': 'Goal', '_title': 'Root Goal', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T03:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2026-10-01T03:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'TemporalTask', '_title': 'Dummy Temporal Task', '_description': 'Example text', '_completed': False, '_deadline': None, '_start_date': '2025-10-10T00:00:00', '_end_date': '2025-10-17T00:00:00', '_startline': None, '_schedule_intervals': [{'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00'}]}, {'_type': 'Goal', '_title': 'Subgoal A', '_description': 'Example text', '_completed': False, '_deadline': '2026-03-30T00:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2026-03-30T00:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'Goal', '_title': 'Subgoal AA', '_description': 'Example text', '_completed': False, '_deadline': '2025-12-30T00:00:00', '_start_date': '2025-10-01T02:00:00', '_end_date': '2025-12-30T00:00:00', '_startline': '2025-10-01T02:00:00', '_schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00'}], '_completed_steps': 0, '_subgoals': []}]}, {'_type': 'Goal', '_title': 'Subgoal B', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T02:00:00', '_start_date': '2026-03-30T00:00:00', '_end_date': '2026-10-01T02:00:00', '_startline': '2026-03-30T00:00:00', '_schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00'}], '_completed_steps': 0, '_subgoals': [{'_type': 'Goal', '_title': 'Subgoal BA', '_description': 'Example text', '_completed': False, '_deadline': '2026-05-01T00:00:00', '_start_date': '2026-03-30T00:00:00', '_end_date': '2026-05-01T00:00:00', '_startline': '2026-03-30T00:00:00', '_schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00'}], '_completed_steps': 0, '_subgoals': []}, {'_type': 'Goal', '_title': 'Subgoal BB', '_description': 'Example text', '_completed': False, '_deadline': '2026-10-01T00:00:00', '_start_date': '2026-05-01T00:00:00', '_end_date': '2026-10-01T00:00:00', '_startline': '2026-05-01T00:00:00', '_schedule_intervals': [{'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00'}], '_completed_steps': 0, '_subgoals': []}, {'_type': 'Task', '_title': 'Task', '_description': 'Example text', '_completed': False, '_deadline': '2026-05-01T00:00:00'}]}]}
+    json = {'type': 'Goal', 'title': 'Root Goal', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T03:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-10-01T03:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'TemporalTask', 'title': 'Dummy Temporal Task', 'description': 'Example text', 'completed': False, 'deadline': None, 'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00', 'startline': None, 'schedule_intervals': [{'start_date': '2025-10-10T00:00:00', 'end_date': '2025-10-17T00:00:00'}]}, {'type': 'Goal', 'title': 'Subgoal A', 'description': 'Example text', 'completed': False, 'deadline': '2026-03-30T00:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2026-03-30T00:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'Goal', 'title': 'Subgoal AA', 'description': 'Example text', 'completed': False, 'deadline': '2025-12-30T00:00:00', 'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00', 'startline': '2025-10-01T02:00:00', 'schedule_intervals': [{'start_date': '2025-10-01T02:00:00', 'end_date': '2025-12-30T00:00:00'}], 'completed_steps': 0, 'subgoals': []}]}, {'type': 'Goal', 'title': 'Subgoal B', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T02:00:00', 'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00', 'startline': '2026-03-30T00:00:00', 'schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-10-01T02:00:00'}], 'completed_steps': 0, 'subgoals': [{'type': 'Goal', 'title': 'Subgoal BA', 'description': 'Example text', 'completed': False, 'deadline': '2026-05-01T00:00:00', 'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00', 'startline': '2026-03-30T00:00:00', 'schedule_intervals': [{'start_date': '2026-03-30T00:00:00', 'end_date': '2026-05-01T00:00:00'}], 'completed_steps': 0, 'subgoals': []}, {'type': 'Goal', 'title': 'Subgoal BB', 'description': 'Example text', 'completed': False, 'deadline': '2026-10-01T00:00:00', 'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00', 'startline': '2026-05-01T00:00:00', 'schedule_intervals': [{'start_date': '2026-05-01T00:00:00', 'end_date': '2026-10-01T00:00:00'}], 'completed_steps': 0, 'subgoals': []}, {'type': 'Task', 'title': 'Task', 'description': 'Example text', 'completed': False, 'deadline': '2026-05-01T00:00:00'}]}]}
     goal = Goal.from_dict(json)
     
     assert goal == dummy_goal

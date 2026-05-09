@@ -59,6 +59,10 @@ class AsciiTitle(Static):
         self.update(styled)
 
 class HomeScreen(Screen):
+    @property
+    def controller(self):
+        return self.app.controller
+
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield AsciiTitle()

@@ -61,6 +61,9 @@ class Calendar:
     
     def remove_event(self, event: Event):
         self.time_tree.delete(event)
+
+    def get_events(self, interval: TimeInterval):
+        return self.time_tree.overlap_search(interval=interval)
     
     def generate_schedule(self, date: datetime):
         domains = defaultdict(set)

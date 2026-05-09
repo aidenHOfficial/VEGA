@@ -42,7 +42,7 @@ def test_add_event():
     calendar.schedule_event(temp_task, 20, 15, 10, 25)
 
     event = Event(temp_task, 20, 15, 10, 25)
-    cal_event = calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))[0]["event"]
+    cal_event = calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))[0].event
 
     assert event == cal_event
 
@@ -64,7 +64,7 @@ def test_remove_event_invalid():
     temp_task2 = Task("Test", "Example text")
     calendar.schedule_event(temp_task, 20, 20, 20, 20)
 
-    temp_event = calendar._get_events(TimeInterval(datetime(2025, 9, 30), datetime(2025, 10, 3)))[0]["event"]
+    temp_event = calendar._get_events(TimeInterval(datetime(2025, 9, 30), datetime(2025, 10, 3)))[0].event
     temp_event2 = Event(temp_task2, 20, 20, 20, 20)
     calendar.remove_event(temp_event)
 
@@ -79,7 +79,7 @@ def test_get_events():
     task_event = Event(temp_task, 20, 15, 10, 25)
     calendar.schedule_event(temp_task, 20, 15, 10, 25)
 
-    assert task_event == calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))[0]["event"]
+    assert task_event == calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2)))[0].event
     
 def test_to_dict():
     calendar = Calendar()

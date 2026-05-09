@@ -121,7 +121,7 @@ def test_overlap_search():
     search_events = tree.overlap_search(TimeInterval(datetime(2025, 10, 2), datetime(2025, 10, 4)))
     assert 3 == len(search_events)
     for event in search_events:
-        assert event['event'] in events
+        assert event.event in events
 
 def test_search():
     tree = TimeTree()

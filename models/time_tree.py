@@ -1,23 +1,20 @@
 from typing import List
 from datetime import datetime
 from dataclasses import dataclass
+from models.scheduled_event import ScheduledEvent
 from models.time_interval import TimeInterval
 from models.time_tree_node import TimeTreeNode
 from models.event import Event
 from models.temporal_task import TemporalTask
 
 @dataclass
-class TimeTree:  
-    root: TimeTreeNode
-    size: int
+class TimeTree:
+    root: TimeTreeNode = None
+    size: int = 0
 
-    def __init__(self):
-        self.root = None
-        self.size = 0
-    
     def to_dict(self):
         return {
-            "root": self.root.to_dict(),
+            "root": self.root.to_dict() if self.root is not None else None,
             "size": self.size
         }
         
@@ -198,7 +195,7 @@ class TimeTree:
     
     def _overlap_search_recursive(self, node: TimeTreeNode, interval: TimeInterval, overlaps: List):
         if node.key.is_overlapping(interval):
-            overlaps.extend({"event": event, "time": node.key} for event in node.get_events())
+            overlaps.extend(ScheduledEvent(event, node.key) for event in node.get_events())
             
         if node.left is not None and node.left.max >= interval.start_date:
             self._overlap_search_recursive(node.left, interval, overlaps)
@@ -218,13 +215,6 @@ class TimeTree:
             print(prefix + ("├── " if is_left else "└── ") + str(node.key) + f" ({node.get_num_events()} events) " + ("Left TimeTreeNode" if is_left else "Right Node"))
             self._print_tree_recursive(node.left, prefix + ("│   " if is_left else "    "), True)
             self._print_tree_recursive(node.right, prefix + ("│   " if is_left else "    "), False)
-
-    def to_dict(self):
-        return {
-            "size": self.size,
-            "root": self.root.to_dict()
-            #The nodes will all be present because the to_dict() function of the nodes is dfs
-        }
 
     def get_size(self):
         return self.size
@@ -252,7 +242,7 @@ class TimeTree:
                 current = current.right
         raise ValueError("Key not found in tree")
 
-    def overlap_search(self, interval: TimeInterval):
+    def overlap_search(self, interval: TimeInterval) -> list[ScheduledEvent]:
         if self.root is None:
             return None
         overlaps = []
@@ -260,7 +250,7 @@ class TimeTree:
 
         return overlaps
 
-    def sweepline_overlap_search(self, interval):
+    def sweepline_overlap_search(self, interval: TimeInterval):
         """Finds all overlapping events within a given interval."""
         if not self.root:
             return {}
@@ -270,8 +260,8 @@ class TimeTree:
     
         points = []
         for e in overlapping_events:
-            time = e["time"]
-            event = e["event"]
+            time = e.interval
+            event = e.event
             points.append((time, time.start_date, 1, event))
             points.append((time, time.end_date, -1, event))
         points.sort(key=lambda x: (x[1], -x[2]))

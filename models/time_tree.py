@@ -244,7 +244,7 @@ class TimeTree:
 
     def overlap_search(self, interval: TimeInterval) -> list[ScheduledEvent]:
         if self.root is None:
-            return None
+            return []
         overlaps = []
         self._overlap_search_recursive(self.root, interval, overlaps)
 

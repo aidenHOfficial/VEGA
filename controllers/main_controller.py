@@ -1,6 +1,4 @@
-from datetime import datetime
-from enum import Enum
-from models.event import Event
+from models.scheduled_event import ScheduledEvent
 from models.task import Task
 from models.time_interval import TimeInterval
 from repositories.calendar_repository import CalendarRepository
@@ -25,7 +23,5 @@ class Controller():
         )
         self.repository.save_calendar(self.calendar)
     
-    def get_events(self, start_date: datetime, end_date: datetime) -> list[Event]:
-        interval = TimeInterval(start_date=start_date, end_date=end_date)
-
+    def get_events(self, interval: TimeInterval) -> list[ScheduledEvent]:
         return self.calendar.get_events(interval=interval)

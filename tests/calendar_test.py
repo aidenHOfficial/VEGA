@@ -55,7 +55,7 @@ def test_remove_event():
 
     calendar.remove_event(task_event)
 
-    assert calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))) is None
+    assert calendar._get_events(TimeInterval(datetime(2025, 10, 1), datetime(2025, 10, 2))) == []
 
 def test_remove_event_invalid():
     calendar = Calendar()

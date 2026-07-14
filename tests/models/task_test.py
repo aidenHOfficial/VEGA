@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from models.task import Task
+from app.models.task import Task
 
 def test_failed_constructor():
     task = Task("this is a test task", datetime(2004,1,1))

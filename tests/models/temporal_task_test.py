@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
-from models.temporal_task import TemporalTask
-from models.time_interval import TimeInterval
+from app.models.temporal_task import TemporalTask
+from app.models.time_interval import TimeInterval
 
 def test_constructor_with_invalid_dates():
     with pytest.raises(ValueError):

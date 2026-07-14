@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime
-from models.time_interval import TimeInterval
-from models.temporal_task import TemporalTask
-from models.time_tree_node import TimeTreeNode
-from models.event import Event
+from app.models.time_interval import TimeInterval
+from app.models.temporal_task import TemporalTask
+from app.models.time_tree_node import TimeTreeNode
+from app.models.event import Event
 
 def test_add_event():
     temp_task = TemporalTask("Test", "Example text", start_date=datetime(2025, 10, 1), end_date=datetime(2025, 10, 2))

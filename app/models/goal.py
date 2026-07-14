@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Optional, Dict
 from datetime import datetime
 from dataclasses import dataclass, field
-from models.task import Task
-from models.temporal_task import TemporalTask
+from app.models.task import Task
+from app.models.temporal_task import TemporalTask
 
 @dataclass
 @Task.register

@@ -1,5 +1,5 @@
 import json, os
-from models.calendar import Calendar
+from app.models.calendar import Calendar
 
 class CalendarRepository():
     LOCAL_SAVE_LOCATION: str = "saves/calendar.json"

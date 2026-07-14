@@ -1,10 +1,11 @@
 import pytest
 from datetime import datetime
-from models.time_interval import TimeInterval
-from models.temporal_task import TemporalTask
-from models.task import Task
-from models.calendar import Calendar 
-from models.event import Event
+
+from app.models.calendar import Calendar
+from app.models.task import Task
+from app.models.temporal_task import TemporalTask
+from app.models.time_interval import TimeInterval
+from app.models.event import Event
 
 def test_generate_schedule():
     cal = Calendar()

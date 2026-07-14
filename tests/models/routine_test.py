@@ -1,8 +1,8 @@
 import pytest
 from datetime import datetime, timedelta
-from models.temporal_task import TemporalTask
-from models.task import Task
-from models.routine import Routine
+from app.models.temporal_task import TemporalTask
+from app.models.task import Task
+from app.models.routine import Routine
 
 def test_add_task():
     routine = Routine(title="Routine", description="Example text", start_date=datetime(2025, 1, 1), end_date=datetime(2025, 1, 2))

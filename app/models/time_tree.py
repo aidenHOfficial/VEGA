@@ -1,11 +1,11 @@
 from typing import List
 from datetime import datetime
 from dataclasses import dataclass
-from models.scheduled_event import ScheduledEvent
-from models.time_interval import TimeInterval
-from models.time_tree_node import TimeTreeNode
-from models.event import Event
-from models.temporal_task import TemporalTask
+from app.models.scheduled_event import ScheduledEvent
+from app.models.time_interval import TimeInterval
+from app.models.time_tree_node import TimeTreeNode
+from app.models.event import Event
+from app.models.temporal_task import TemporalTask
 
 @dataclass
 class TimeTree:

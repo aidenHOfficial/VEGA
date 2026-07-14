@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import List
 from datetime import datetime
 from dataclasses import dataclass, field
-from models.event import Event
-from models.time_interval import TimeInterval
+from app.models.event import Event
+from app.models.time_interval import TimeInterval
 
 @dataclass
 class TimeTreeNode:

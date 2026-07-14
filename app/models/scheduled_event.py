@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from models.event import Event
-from models.time_interval import TimeInterval
+from app.models.event import Event
+from app.models.time_interval import TimeInterval
 
 @dataclass(slots=True)
 class ScheduledEvent:

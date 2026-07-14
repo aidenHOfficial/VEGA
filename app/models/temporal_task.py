@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Optional, List
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from models.task import Task
-from models.time_interval import TimeInterval
+from app.models.task import Task
+from app.models.time_interval import TimeInterval
 
 @dataclass
 @Task.register

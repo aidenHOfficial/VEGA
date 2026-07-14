@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime, timedelta
-from models.time_interval import TimeInterval
-from models.temporal_task import TemporalTask
-from models.task import Task
-from models.event import Event
+from app.models.time_interval import TimeInterval
+from app.models.temporal_task import TemporalTask
+from app.models.task import Task
+from app.models.event import Event
 
 def test_get_priority_score_simple():
     task = Task("Make bed", "Remember after waking up to go to bed")

@@ -3,12 +3,12 @@ from collections import defaultdict
 from datetime import date, datetime 
 import bisect
 from dataclasses import dataclass, field
-from models.task import Task
-from models.time_interval import TimeInterval
-from models.temporal_task import TemporalTask
-from models.csp import CSP
-from models.event import Event
-from models.time_tree import TimeTree
+from app.models.task import Task
+from app.models.time_interval import TimeInterval
+from app.models.temporal_task import TemporalTask
+from app.models.csp import CSP
+from app.models.event import Event
+from app.models.time_tree import TimeTree
 
 @dataclass
 class Calendar:

@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime
-from models.time_interval import TimeInterval
-from models.temporal_task import TemporalTask
-from models.time_tree import TimeTree
-from models.event import Event
+from app.models.time_interval import TimeInterval
+from app.models.temporal_task import TemporalTask
+from app.models.time_tree import TimeTree
+from app.models.event import Event
 
 def test_insertion():
     tree = TimeTree()

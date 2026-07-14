@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from models.time_interval import TimeInterval
+from app.models.time_interval import TimeInterval
 
 def test___init__():
     assert TimeInterval(datetime(2004, 10, 1), datetime(2004, 10, 2)) is not None

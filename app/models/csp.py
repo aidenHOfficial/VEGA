@@ -1,8 +1,8 @@
 from typing import List, Dict, Set, Tuple
 from datetime import timedelta
 from dataclasses import dataclass
-from models.time_interval import TimeInterval
-from models.event import Event
+from app.models.time_interval import TimeInterval
+from app.models.event import Event
 
 @dataclass
 class CSP:

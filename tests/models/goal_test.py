@@ -1,8 +1,8 @@
 import pytest
 from datetime import datetime
-from models.temporal_task import TemporalTask
-from models.task import Task
-from models.goal import Goal
+from app.models.temporal_task import TemporalTask
+from app.models.task import Task
+from app.models.goal import Goal
 
 @pytest.fixture
 def dummy_goal():

@@ -1,8 +1,8 @@
 from __future__ import annotations
 from datetime import timedelta
 from dataclasses import dataclass
-from models.task import Task
-from models.temporal_task import TemporalTask
+from app.models.task import Task
+from app.models.temporal_task import TemporalTask
 
 @dataclass
 class RoutineEntry:

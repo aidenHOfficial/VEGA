@@ -1,0 +1,32 @@
+{
+  "tasks": {
+    "dev": "deno run -A --node-modules-dir npm:vite",
+    "build": "deno run -A --node-modules-dir npm:vite build",
+    "preview": "deno run -A --node-modules-dir npm:vite preview",
+    "serve": "deno run --allow-net --allow-read jsr:@std/http@1/file-server dist/"
+  },
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "jsxImportSourceTypes": "@types/react"
+  },
+  "imports": {
+    "@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.5",
+    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.2.1",
+    "@tanstack/react-query": "npm:@tanstack/react-query@^5.90.21",
+    "@tanstack/react-router": "npm:@tanstack/react-router@^1.166.2",
+    "@tanstack/router-plugin": "npm:@tanstack/router-plugin@^1.166.2",
+    "@testing-library/dom": "npm:@testing-library/dom@^10.4.1",
+    "@testing-library/react": "npm:@testing-library/react@^16.3.2",
+    "@testing-library/user-event": "npm:@testing-library/user-event@^14.6.1",
+    "@types/react": "npm:@types/react@^19.2.10",
+    "@types/react-dom": "npm:@types/react-dom@^19.2.3",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.1.2",
+    "jsdom": "npm:jsdom@^28.1.0",
+    "react": "npm:react@^19.2.4",
+    "react-dom": "npm:react-dom@^19.2.4",
+    "tailwindcss": "npm:tailwindcss@^4.2.1",
+    "vite": "npm:vite@^7.3.1"
+  }
+}

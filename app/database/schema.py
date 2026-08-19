@@ -1,7 +1,13 @@
 from typing import ClassVar
 from sqlmodel import UUID, Field, Relationship, SQLModel
-import datetime
+from datetime import datetime, timedelta
 import enum
+
+class TaskType(str, enum.Enum):
+    TASK = "task"
+    TEMPORALTASK = "temporal_task"
+    ROUTINE = "routine"
+    GOAL = "goal"
 
 class Task(SQLModel, table=True):
     """ 
@@ -16,7 +22,7 @@ class Task(SQLModel, table=True):
         type: the type of the task
     """
 
-    __tablename__: ClassVar[str] = "tasks"
+    __tablename__ = "tasks"
 
     id: UUID = Field(
         primary_key=True,
@@ -24,25 +30,24 @@ class Task(SQLModel, table=True):
     )
     title: str = Field(
         max_length=200,
-        default=False,
         nullable=False
     )
     description: str = Field(
         max_length=400,
-        default=False,
         nullable=False
     )
     completed: bool = Field(
-        default=False,
         nullable=False
     )
     deadline: datetime = Field(
         nullable=False,
-        defualt=False
     )
-    type: enum = Field(
+    type: TaskType = Field(
         nullable=False,
-        default=False
+    )
+
+    events: list["Event"] = Relationship(
+        back_populates="task"
     )
 
 class TemporalTask(SQLModel, table=True):
@@ -63,25 +68,20 @@ class TemporalTask(SQLModel, table=True):
         intervals: lsit of time intervals for available rescheduling periods
     """
 
-    __tablename__: ClassVar[str] = "temporal_tasks"
+    __tablename__ = "temporal_tasks"
 
-    id: UUID = Field(
-        primary_key=True,
-        ondelete="CASCADE"
-    )
-    task_id: int = Field(
+    task_id: UUID = Field(
         foreign_key="tasks.id",
         primary_key=True,
         nullable=False,
     )
     start: datetime = Field(
-        default=False,
         nullable=False
     )
     end: datetime = Field(
-        default=False,
         nullable=False
     )
+
     intervals: list["TimeInterval"] = Relationship(
         back_populates="time_intervals"
     )
@@ -104,19 +104,11 @@ class TimeInterval(SQLModel, table=True):
     id: UUID = Field(
         primary_key=True
     )
-    task_id: UUID = Field(
-        foreign_key="temporal_tasks.id"
-    )
-    task: TemporalTask = Relationship(
-        back_populates="intervals"
-    )
     start: datetime = Field(
         nullable=False,
-        default=False
     )
     end: datetime = Field(
         nullable=False,
-        default=False
     )
 
 class Event(SQLModel, table=True):
@@ -132,7 +124,7 @@ class Event(SQLModel, table=True):
         relational_value: float abstract value which represents this event's relational value
 
     Relationships:
-        task_id: the related temporal task to this event
+        task_id: the related task to this event
     """
 
     __tablename__ = "events"
@@ -143,22 +135,181 @@ class Event(SQLModel, table=True):
     task_id: UUID = Field(
         foreign_key="tasks.id"
     )
-    task: Task = Relationship(
-        back_populates="tasks"
-    )
     goal_value: float = Field(
         nullable=False,
-        default=0.0
     )
     routine_value: float = Field(
         nullable=False,
-        default=0.0
     )
     personal_value: float = Field(
         nullable=False,
-        default=0.0
     )
     relational_value: float = Field(
         nullable=False,
-        default=0.0
     )
+
+    task: Task = Relationship(
+        back_populates="events"
+    )
+
+class Goal(SQLModel, table=True):
+    """ 
+    Goal object table
+    Each entry represents a new goal
+
+    Fields:
+        task_id: id which relates this goal to a task
+        subgoals: list of subgoals for this goal
+        completed_steps: the number of completed steps
+
+    Relationships:
+        task_id: the related temporal task to this goal
+        subgoals: the list of task ids for the subgoals
+    """
+
+    __tablename__ = "goals"
+
+    task_id: UUID = Field(
+        foreign_key="tasks.id",
+        primary_key=True,
+        nullable=False,
+    )
+    completed_steps: int = Field(
+        nullable=False,
+    )
+
+    subgoals: list["Task"] = Relationship(
+        back_populates="tasks"
+    )
+
+class RoutineEntry(SQLModel, table=True):
+    """ 
+    RoutineEntry object table
+    Each entry represents a new routine entry object
+
+    Fields:
+        task_id: the associated task for this entry
+        duration: the time duration this task should take to complete
+
+    Relationships:
+        task_id: the inheritance of task attributes
+    """
+
+    __tablename__: ClassVar[str] = "routine_entries"
+
+    id: UUID = Field(
+        primary_key=True,
+        ondelete="CASCADE"
+    )
+    task_id: UUID = Field(
+        foreign_key="tasks.id",
+        nullable=False,
+    )
+    duration: timedelta = Field(
+        nullable=False
+    )
+
+class Routine(SQLModel, table=True):
+    """ 
+    Routine object table
+    Each entry represents a new routine object
+
+    Fields:
+        task_id: the associated task for this entry
+        duration: the time duration this task should take to complete
+
+    Relationships:
+        task_id: the inheritance of task attributes
+    """
+
+    __tablename__: ClassVar[str] = "routines"
+
+    task_id: UUID = Field(
+        foreign_key="tasks.id",
+        primary_key=True,
+        nullable=False,
+    )
+    duration: timedelta = Field(
+        nullable=False
+    )
+
+# class TimeTreeNode(SQLModel, table=True):
+#     """ 
+#     Time Tree Node object table
+#     Each entry represents a new node on the time tree
+
+#     Fields:
+#         task_id: the associated task for this entry
+#         duration: the time duration this task should take to complete
+
+#     Relationships:
+#         task_id: the inheritance of task attributes
+#     """
+
+#     __tablename__ = "time_tree_nodes"
+
+#     id: UUID = Field(
+#         primary_key=True,
+#         nullable=False
+#     )
+#     key_id: UUID = Field(
+#         nullable=False,
+#         foreign_key="time_intervals.id",
+#     )
+#     max: datetime = Field(
+#         nullable=False,
+#     )
+#     min: datetime = Field(
+#         nullable=False,
+#     )
+#     left_id: UUID | None = Field(
+#         default=None,
+#         foreign_key="time_tree_nodes.id",
+#         nullable=True,
+#     )
+
+#     right_id: UUID | None = Field(
+#         default=None,
+#         foreign_key="time_tree_nodes.id",
+#         nullable=True,
+#     )
+#     height: int = Field(
+#         nullable=False,
+#     )
+
+#     events: list["Event"] = Relationship(
+#         back_populates="events"
+#     )
+#     key: TimeInterval = Relationship(
+#         back_populates="time_intervals"
+#     )
+
+# class TimeTree(SQLModel, table=True):
+#     """ 
+#     Time Tree object table
+#     Represents the time tree for the application
+
+#     Fields:
+#         root: the root of the tree
+#         size: the size of the tree
+
+#     Relationships:
+#         root: the root of the tree
+#     """
+
+#     __tablename__ = "time_tree"
+
+#     id: UUID = Field(
+#         primary_key=True
+#     )
+#     root_id: UUID = Field(
+#         foreign_key="time_tree_nodes.id",
+#         nullable=False
+#     )
+#     size: int = Field(
+#         nullable=False,
+#     )
+
+#     root: TimeTreeNode = Relationship(
+#         back_populates="time_tree_nodes"
+#     )
